@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface Message {
   text: string;
@@ -14,7 +13,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const initialText = localStorage.getItem('initialText');
