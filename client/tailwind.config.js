@@ -7,10 +7,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        'dark-bg': '#1A1A1A',
-        'dark-surface': '#2C2C2C',
-        'dark-primary': '#4A90E2',
-        'dark-secondary': '#718096',
+        'dark-bg': '#1E1E2E',
+        'dark-surface': '#2B2B3D',
+        'dark-primary': '#3E7BFA',
+        'dark-secondary': '#8E8EA0',
         'dark-error': '#E53E3E',
         'dark-on-bg': '#E1E1E1',
         'dark-on-surface': '#FFFFFF',
