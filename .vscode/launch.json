@@ -15,6 +15,47 @@
                 "OPENAI_API_KEY": "api-key",
                 "DB_URI": "mongodb://username:password@localhost:27017/db?authSource=admin"
             }
+        },
+        {
+            "name": "Launch Client",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/client",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "run",
+                "dev"
+            ],
+            "autoAttachChildProcesses": true,
+            "sourceMaps": true,
+            "env": {
+                "NODE_ENV": "development",
+                "VITE_BACKEND_URL": "http://localhost:8080"
+            },
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "outFiles": [
+                "${workspaceFolder}/client/dist/**/*.js"
+            ]
+        },
+        {
+            "name": "Attach to Chrome",
+            "type": "chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/client/src",
+            "sourceMaps": true,
+            "trace": true
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Launch Client & Attach Chrome",
+            "configurations": [
+                "Launch Client",
+                "Attach to Chrome"
+            ]
         }
     ]
 }
