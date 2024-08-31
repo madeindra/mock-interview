@@ -51,29 +51,29 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
         <h1 className="text-3xl font-bold mb-6 text-center text-dark-primary">Mock Interview</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="role" className="block mb-2 text-dark-on-surface">Role</label>
+            <label htmlFor="role" className="block mb-2 text-dark-on-surface font-semibold">Role</label>
             <input
               type="text"
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Backend Engineer"
+              placeholder="e.g. Fullstack Developer"
               className="input-field w-full"
               required
             />
           </div>
           <div>
-            <label htmlFor="skills" className="block mb-2 text-dark-on-surface">Skills</label>
+            <label htmlFor="skills" className="block mb-2 text-dark-on-surface font-semibold">Skills</label>
             <textarea
               id="skills"
               value={skills}
               onChange={(e) => setSkills(e.target.value)}
-              placeholder="e.g. HTTP, Golang, REST API, AWS"
+              placeholder="e.g. Javascript, Typescript, REST API"
               className="input-field w-full h-32"
               required
             ></textarea>
           </div>
-          <button type="submit" className="btn-primary w-full">
+          <button type="submit" className="btn-primary w-full text-dark-on-surface">
             Start Interview
           </button>
         </form>
