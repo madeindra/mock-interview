@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   text: string;
   isUser: boolean;
 }
 
-const ChatScreen: React.FC = () => {
+interface ChatScreenProps {
+  setError: (error: string | null) => void;
+}
+
+const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initialText = localStorage.getItem('initialText');
@@ -23,26 +28,33 @@ const ChatScreen: React.FC = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      const audioChunks: BlobPart[] = [];
       mediaRecorderRef.current.ondataavailable = (event) => {
-        setAudioBlob(event.data);
+        audioChunks.push(event.data);
       };
+
+      mediaRecorderRef.current.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        sendAudioToServer(audioBlob);
+      };
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
     } catch (error) {
       console.error('Error accessing microphone:', error);
+      setError('Failed to access microphone. Please check your permissions and try again.');
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current) {
+    if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
 
-  const sendAudioToServer = async () => {
-    if (!audioBlob) return;
-
+  const sendAudioToServer = async (audioBlob: Blob) => {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.wav');
 
@@ -59,19 +71,22 @@ const ChatScreen: React.FC = () => {
         body: formData,
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (response.ok && data.data) {
         setMessages(prev => [
           ...prev,
-          { text: data.prompt.text, isUser: true },
-          { text: data.answer.text, isUser: false }
+          { text: data.data.prompt.text, isUser: true },
+          { text: data.data.answer.text, isUser: false }
         ]);
-        playAudio(data.answer.audio);
+        playAudio(data.data.answer.audio);
       } else {
-        console.error('Failed to send audio');
+        const errorMessage = data.message || 'Failed to process your response. Please try again.';
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error sending audio:', error);
+      setError('Failed to send your response. Please check your connection and try again.');
     }
   };
 
@@ -83,8 +98,8 @@ const ChatScreen: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto mt-10 p-4">
-      <div className="mb-4 h-96 overflow-y-auto border rounded p-4">
+    <div className="container mx-auto p-4">
+      <div className="mb-4 h-[calc(100vh-8rem)] overflow-y-auto border rounded p-4">
         {messages.map((message, index) => (
           <div key={index} className={`mb-2 ${message.isUser ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-2 rounded ${message.isUser ? 'bg-blue-200' : 'bg-gray-200'}`}>
@@ -99,14 +114,6 @@ const ChatScreen: React.FC = () => {
       >
         {isRecording ? 'Stop Recording' : 'Start Recording'}
       </button>
-      {audioBlob && !isRecording && (
-        <button
-          onClick={sendAudioToServer}
-          className="w-full mt-2 p-2 rounded bg-blue-500 text-white"
-        >
-          Send Response
-        </button>
-      )}
     </div>
   );
 };
