@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface Message {
   text: string;
   isUser: boolean;
+  displayedText?: string;
 }
 
 interface ChatScreenProps {
@@ -13,13 +14,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initialText = localStorage.getItem('initialText');
     if (initialText) {
-      setMessages([{ text: initialText, isUser: false }]);
+      setMessages([{ text: initialText, isUser: false, displayedText: '' }]);
+      typeMessage(0, initialText);
       playAudio(localStorage.getItem('initialAudio'));
     }
   }, []);
@@ -29,6 +32,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const typeMessage = (messageIndex: number, text: string) => {
+    setIsTyping(true);
+    
+    let i = 0;
+    const typingInterval = setInterval(() => {
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages];
+        if (newMessages[messageIndex]) {
+          newMessages[messageIndex] = {
+            ...newMessages[messageIndex],
+            displayedText: text.slice(0, i)
+          };
+        }
+        return newMessages;
+      });
+
+      i++;
+      
+      if (i > text.length) {
+        clearInterval(typingInterval);
+        setIsTyping(false);
+      }
+    }, 25);
+  };
 
   const startRecording = async () => {
     try {
@@ -82,11 +110,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       const data = await response.json();
 
       if (response.ok && data.data) {
-        setMessages(prev => [
-          ...prev,
-          { text: data.data.prompt.text, isUser: true },
-          { text: data.data.answer.text, isUser: false }
-        ]);
+        const userMessage: Message = { text: data.data.prompt.text, isUser: true };
+        const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
+        
+        setMessages(prev => [...prev, userMessage, botMessage]);
+        
+        // Start typing effect for the bot message
+        requestAnimationFrame(() => {
+          typeMessage(messages.length + 1, data.data.answer.text);
+        });
+        
         playAudio(data.data.answer.audio);
       } else {
         const errorMessage = data.message || 'Failed to process your response. Please try again.';
@@ -113,16 +146,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         {messages.map((message, index) => (
           <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-dark-primary text-dark-on-surface' : 'bg-dark-secondary text-dark-on-surface'}`}>
-              {message.text}
+              {message.isUser ? message.text : (message.displayedText || '')}
             </span>
           </div>
         ))}
       </div>
       <button
         onClick={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing}
+        disabled={isProcessing || isTyping}
         className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-          isProcessing
+          isProcessing || isTyping
             ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
             : isRecording 
               ? 'bg-dark-error text-dark-on-surface animate-pulse' 
@@ -131,9 +164,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       >
         {isProcessing 
           ? 'Processing...' 
-          : isRecording 
-            ? 'Stop Recording' 
-            : 'Start Recording'
+          : isTyping
+            ? 'Responding...'
+            : isRecording 
+              ? 'Stop Recording' 
+              : 'Start Recording'
         }
       </button>
     </div>
