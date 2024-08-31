@@ -33,7 +33,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         sendAudioToServer(audioBlob);
       };
 
