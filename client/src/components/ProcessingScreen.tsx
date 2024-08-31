@@ -19,7 +19,10 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ setError }) => {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="text-2xl font-bold">Processing...</div>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-dark-primary mx-auto mb-4"></div>
+        <div className="text-2xl font-bold text-dark-primary">Processing...</div>
+      </div>
     </div>
   );
 };

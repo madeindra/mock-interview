@@ -12,7 +12,9 @@ interface ChatScreenProps {
 const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initialText = localStorage.getItem('initialText');
@@ -21,6 +23,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       playAudio(localStorage.getItem('initialAudio'));
     }
   }, []);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const startRecording = async () => {
     try {
@@ -33,7 +41,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       };
 
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         sendAudioToServer(audioBlob);
       };
 
@@ -54,11 +62,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
 
   const sendAudioToServer = async (audioBlob: Blob) => {
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.wav');
+    formData.append('file', audioBlob, 'audio.webm');
 
     const id = localStorage.getItem('interviewId');
     const secret = localStorage.getItem('interviewSecret');
     const authString = btoa(`${id}:${secret}`);
+
+    setIsProcessing(true);
 
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/answer`, {
@@ -85,6 +95,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     } catch (error) {
       console.error('Error sending audio:', error);
       setError('Failed to send your response. Please check your connection and try again.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -96,11 +108,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-4 h-[calc(100vh-8rem)] overflow-y-auto border rounded p-4">
+    <div className="container mx-auto p-4 h-screen flex flex-col">
+      <div ref={chatContainerRef} className="flex-grow overflow-y-auto mb-4 bg-dark-surface rounded-xl p-4 shadow-inner">
         {messages.map((message, index) => (
-          <div key={index} className={`mb-2 ${message.isUser ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block p-2 rounded ${message.isUser ? 'bg-blue-200' : 'bg-gray-200'}`}>
+          <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
+            <span className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-dark-primary text-dark-on-surface' : 'bg-dark-secondary text-dark-on-surface'}`}>
               {message.text}
             </span>
           </div>
@@ -108,9 +120,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       </div>
       <button
         onClick={isRecording ? stopRecording : startRecording}
-        className={`w-full p-2 rounded ${isRecording ? 'bg-red-500' : 'bg-green-500'} text-white`}
+        disabled={isProcessing}
+        className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+          isProcessing
+            ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
+            : isRecording 
+              ? 'bg-dark-error text-dark-on-surface animate-pulse' 
+              : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
+        }`}
       >
-        {isRecording ? 'Stop Recording' : 'Start Recording'}
+        {isProcessing 
+          ? 'Processing...' 
+          : isRecording 
+            ? 'Stop Recording' 
+            : 'Start Recording'
+        }
       </button>
     </div>
   );
