@@ -9,6 +9,12 @@ The server is built with Go 1.22 and is located in the `server` directory. It re
 - `OPENAI_API_KEY`: Your OpenAI API key
 - `DB_URI`: MongoDB connection string
 
+These configurations are optional:
+- `PORT`: The port number for the server to run
+- `CORS_ALLOWED_ORIGINS`: Allowed origin to call the APIs
+- `CORS_ALLOWED_METHODS`: Allowed methods of the APIs call
+- `CORS_ALLOWED_HEADERS`: Allowed headers of the APIs call
+
 ## Client
 
 The client is built using React TypeScript with Vite and Node.js 20. It is located in the `client` directory. It requires one environment variable:
@@ -49,6 +55,12 @@ To run the project using Docker and docker-compose, follow these steps:
    ```
    docker-compose down
    ```
+
+### Notes
+
+When running the server using the provided `docker-compose.yml`, the `DB_URI` environment variable is infered from Mongo's credential.
+
+If there the server's port is changed or if client and server are deployed in separate domain, please update the `BACKEND_URL` arguments on the client's Dockerfile.
 
 ## Development
 
