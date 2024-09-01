@@ -2,6 +2,8 @@
 
 This project is a mock interviewing tool built with AI. It consists of a Go server and a React TypeScript client with Vite.
 
+![preview](./preview.gif)
+
 ## Server
 
 The server is built with Go 1.22 and is located in the `server` directory. It requires the following environment variables:
