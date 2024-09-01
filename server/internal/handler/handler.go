@@ -35,6 +35,7 @@ func NewHandler(cfg config.AppConfig) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.BasicAuth)
 		r.Post("/chat/answer", h.AnswerChat)
+		r.Post("/chat/end", h.EndChat)
 	})
 
 	return r
