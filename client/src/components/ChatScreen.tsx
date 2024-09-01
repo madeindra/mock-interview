@@ -16,6 +16,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
   const navigate = useNavigate();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         }
         return newMessages;
       });
-
+  
       i++;
       
       if (i > text.length) {
@@ -66,7 +68,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-      
+
       const audioChunks: BlobPart[] = [];
       mediaRecorderRef.current.ondataavailable = (event) => {
         audioChunks.push(event.data);
@@ -116,14 +118,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       if (response.ok && data.data) {
         const userMessage: Message = { text: data.data.prompt.text, isUser: true };
         const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
-        
+
         setMessages(prev => [...prev, userMessage, botMessage]);
-        
+
         // Start typing effect for the bot message
         requestAnimationFrame(() => {
           typeMessage(messages.length + 1, data.data.answer.text);
         });
-        
+
         playAudio(data.data.answer.audio);
       } else {
         const errorMessage = data.message || 'Failed to process your response. Please try again.';
@@ -133,6 +135,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       console.error('Error sending audio:', error);
       setError('Failed to send your response. Please check your connection and try again.');
     } finally {
+      setHasStarted(true);
       setIsProcessing(false);
     }
   };
@@ -141,6 +144,48 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     if (base64Audio) {
       const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
       audio.play();
+    }
+  };
+
+  const endInterview = async () => {
+    const id = sessionStorage.getItem('interviewId');
+    const secret = sessionStorage.getItem('interviewSecret');
+    const authString = btoa(`${id}:${secret}`);
+  
+    setIsProcessing(true);
+  
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/end`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${authString}`,
+        },
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok && data.data) {
+        const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
+  
+        setMessages(prevMessages => {
+          const newMessages = [...prevMessages, botMessage];
+          // Start typing effect for the bot message after state update
+          setTimeout(() => {
+            typeMessage(newMessages.length - 1, data.data.answer.text);
+          }, 0);
+          return newMessages;
+        });
+  
+        playAudio(data.data.answer.audio);
+      } else {
+        setError(data.message || 'Failed to end the interview. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error ending interview:', error);
+      setError('Failed to end the interview. Please check your connection and try again.');
+    } finally {
+      setHasEnded(true);
+      setIsProcessing(false);
     }
   };
 
@@ -155,26 +200,43 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
           </div>
         ))}
       </div>
-      <button
-        onClick={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing || isTyping}
-        className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-          isProcessing || isTyping
-            ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
-            : isRecording 
-              ? 'bg-dark-error text-dark-on-surface animate-pulse' 
-              : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
-        }`}
-      >
-        {isProcessing 
-          ? 'Processing...' 
-          : isTyping
-            ? 'Responding...'
-            : isRecording 
-              ? 'Stop Recording' 
-              : 'Start Recording'
-        }
-      </button>
+      <div className="flex justify-between items-center space-x-4">
+        <button
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={isProcessing || isTyping || hasEnded}
+          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+            isProcessing || isTyping || hasEnded
+              ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
+              : isRecording 
+                ? 'bg-dark-error text-dark-on-surface animate-pulse' 
+                : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
+          }`}
+        >
+          {isProcessing 
+            ? 'Processing...' 
+            : isTyping
+              ? 'Responding...'
+              : isRecording 
+                ? 'Stop Recording' 
+                  : hasEnded
+                  ? 'Good Luck!'
+                : 'Start Recording'
+          }
+        </button>
+        {hasStarted && (
+          <button
+            onClick={endInterview}
+            disabled={isProcessing || isTyping || hasEnded}
+            className={`p-4 rounded-xl font-bold text-lg text-dark-on-surface hover:bg-opacity-90 transition-all duration-300 ${
+              isProcessing || isTyping || hasEnded
+                ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
+                : 'bg-dark-error text-dark-on-surface hover:bg-opacity-90'
+            }`}
+          >
+            End
+          </button>
+        )}
+      </div>
     </div>
   );
 };
