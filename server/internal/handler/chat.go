@@ -219,3 +219,91 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 
 	util.SendResponse(w, response, "success", http.StatusOK)
 }
+
+func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
+	userID := req.Context().Value(middleware.ContextKeyUserID).(string)
+	userSecret := req.Context().Value(middleware.ContextKeyUserSecret).(string)
+
+	if userID == "" || userSecret == "" {
+		log.Println("user ID or secret is missing")
+		util.SendResponse(w, nil, "missing required authentication", http.StatusUnauthorized)
+
+		return
+	}
+
+	entry, err := h.db.GetChat(userID)
+	if err != nil {
+		log.Printf("failed to get chat: %v", err)
+		util.SendResponse(w, nil, "failed to get chat", http.StatusInternalServerError)
+
+		return
+	}
+
+	if err := util.CompareHash(userSecret, entry.Secret); err != nil {
+		log.Println("invalid user secret")
+		util.SendResponse(w, nil, "invalid user secret", http.StatusUnauthorized)
+
+		return
+	}
+
+	chatHistory := append(entry.History, openai.ChatMessage{
+		Role:    openai.ROLE_USER,
+		Content: "That is the end of the mock interview, thank you, please provide your feedbacks on my strength and which area to improve, and whether you are confident that I fits the role.",
+	})
+
+	chatCompletion, err := h.ai.Chat(chatHistory)
+	if err != nil {
+		log.Printf("failed to get chat completion: %v", err)
+		util.SendResponse(w, nil, "failed to get chat completion", http.StatusInternalServerError)
+
+		return
+	}
+
+	if len(chatCompletion.Choices) == 0 {
+		log.Println("cannot complete chat completion: no chat completion")
+		util.SendResponse(w, nil, "cannot complete chat completion", http.StatusInternalServerError)
+
+		return
+	}
+
+	speechInput := util.SanitizeString(chatCompletion.Choices[0].Message.Content)
+
+	speech, err := h.ai.TextToSpeech(speechInput)
+	if err != nil {
+		log.Printf("failed to create speech: %v", err)
+		util.SendResponse(w, nil, "failed to create speech", http.StatusInternalServerError)
+
+		return
+	}
+
+	speechByte, err := io.ReadAll(speech)
+	if err != nil {
+		log.Printf("failed to read speech: %v", err)
+		util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
+
+		return
+	}
+	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
+
+	chatHistory = append(chatHistory, openai.ChatMessage{
+		Role:    openai.ROLE_ASSISTANT,
+		Content: chatCompletion.Choices[0].Message.Content,
+	})
+
+	entry.History = chatHistory
+	if err := h.db.UpdateChat(userID, entry); err != nil {
+		log.Printf("failed to update chat: %v", err)
+		util.SendResponse(w, nil, "failed to update chat", http.StatusInternalServerError)
+
+		return
+	}
+
+	response := model.AnswerChatResponse{
+		Answer: model.Chat{
+			Text:  chatCompletion.Choices[0].Message.Content,
+			Audio: speechBase64,
+		},
+	}
+
+	util.SendResponse(w, response, "success", http.StatusOK)
+}
