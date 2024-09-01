@@ -48,7 +48,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
   return (
     <div className="container mx-auto mt-10 p-4">
       <div className="max-w-md mx-auto bg-dark-surface p-8 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-6 text-center text-dark-primary">Mock Interview</h1>
+        <h1 className="text-3xl font-bold mb-6 text-center text-dark-on-surface">Mock Interview</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="role" className="block mb-2 text-dark-on-surface font-semibold">Role</label>
