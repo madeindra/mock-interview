@@ -9,6 +9,10 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ setError }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (localStorage.getItem('initialText')) {
+      navigate('/chat')
+    }
+    
     const timeoutId = setTimeout(() => {
       setError('Request timed out. Please try again.');
       navigate('/');

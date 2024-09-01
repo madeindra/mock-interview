@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
   text: string;
@@ -15,6 +16,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const navigate = useNavigate();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -24,8 +26,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       setMessages([{ text: initialText, isUser: false, displayedText: '' }]);
       typeMessage(0, initialText);
       playAudio(localStorage.getItem('initialAudio'));
+    } else {
+      navigate('/');
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
