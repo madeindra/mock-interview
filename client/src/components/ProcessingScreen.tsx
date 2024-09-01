@@ -9,7 +9,7 @@ const ProcessingScreen: React.FC<ProcessingScreenProps> = ({ setError }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem('initialText')) {
+    if (sessionStorage.getItem('initialText')) {
       navigate('/chat')
     }
     

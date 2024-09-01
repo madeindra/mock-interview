@@ -21,11 +21,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const initialText = localStorage.getItem('initialText');
+    const initialText = sessionStorage.getItem('initialText');
     if (initialText) {
       setMessages([{ text: initialText, isUser: false, displayedText: '' }]);
       typeMessage(0, initialText);
-      playAudio(localStorage.getItem('initialAudio'));
+      playAudio(sessionStorage.getItem('initialAudio'));
     } else {
       navigate('/');
     }
@@ -96,8 +96,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
 
-    const id = localStorage.getItem('interviewId');
-    const secret = localStorage.getItem('interviewSecret');
+    const id = sessionStorage.getItem('interviewId');
+    const secret = sessionStorage.getItem('interviewSecret');
     const authString = btoa(`${id}:${secret}`);
 
     setIsProcessing(true);
