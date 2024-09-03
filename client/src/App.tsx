@@ -9,9 +9,9 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-dark-bg text-dark-on-bg flex flex-col">
+      <div className="min-h-screen bg-dark-bg text-dark-on-bg flex flex-col relative">
         {error && (
-          <div className="bg-dark-error text-dark-on-surface px-4 py-3 relative" role="alert">
+          <div className="absolute top-0 left-0 right-0 bg-dark-error text-dark-on-surface px-4 py-3 z-50" role="alert">
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
             <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
