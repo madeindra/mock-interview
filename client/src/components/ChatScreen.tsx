@@ -19,9 +19,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [hasEnded, setHasEnded] = useState(false);
-  
+
   const navigate = useNavigate();
-  
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -142,6 +142,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         });
 
         playAudio(data.data.answer.audio);
+
+        setHasStarted(true);
       } else {
         const errorMessage = data.message || 'Failed to process your response. Please try again.';
         setError(errorMessage);
@@ -150,7 +152,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       console.error('Error sending audio:', error);
       setError('Failed to send your response. Please check your connection and try again.');
     } finally {
-      setHasStarted(true);
       setIsProcessing(false);
     }
   };
@@ -217,10 +218,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
 
   return (
     <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
-      <Navbar 
-        showBackIcon 
+      <Navbar
+        showBackIcon
         showForwardIcon
-        showStartOver 
+        showStartOver
         onBack={handleBack}
         onStartOver={handleStartOver}
         disableForward={true}
@@ -228,11 +229,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
       <div ref={chatContainerRef} className="flex-grow overflow-y-auto px-4 py-2">
         {messages.map((message, index) => (
           <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block p-3 rounded-2xl ${
-              message.isUser 
-                ? 'bg-[#3E64FF] text-white' 
+            <span className={`inline-block p-3 rounded-2xl ${message.isUser
+                ? 'bg-[#3E64FF] text-white'
                 : 'bg-[#2B2B3B] text-white'
-            }`}>
+              }`}>
               {message.isUser ? message.text : (message.displayedText || '')}
             </span>
           </div>
@@ -243,13 +243,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         <button
           onClick={isRecording ? stopRecording : startRecording}
           disabled={isProcessing || isTyping || hasEnded}
-          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-            isProcessing || isTyping || hasEnded
+          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${isProcessing || isTyping || hasEnded
               ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
               : isRecording
                 ? 'bg-[#FF3E3E] text-white animate-pulse'
                 : 'bg-[#3E64FF] text-white hover:bg-opacity-90'
-          }`}
+            }`}
         >
           {isProcessing
             ? 'Processing...'
