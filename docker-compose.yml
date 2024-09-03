@@ -9,8 +9,6 @@ services:
       - "8080:8080"
     environment:
       - DB_PATH=${DB_PATH:-app.db}
-    depends_on:
-      - mongodb
     networks:
       - bridged
     env_file:
@@ -21,7 +19,7 @@ services:
       context: ./client
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "3000:3000"
     depends_on:
       - server
     networks:

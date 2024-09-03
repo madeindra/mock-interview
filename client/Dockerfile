@@ -26,10 +26,22 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm run build
 
 # Final stage
-FROM nginx:alpine
+FROM node:20-alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-EXPOSE 80
+# Copy built assets from builder stage
+COPY --from=builder /app/dist ./dist
 
-CMD ["nginx", "-g", "daemon off;"]
+# Copy package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
+
+# Install production dependencies only
+RUN npm install -g pnpm && pnpm install --prod
+
+# Install a simple HTTP server for serving static content
+RUN npm install -g serve
+
+EXPOSE 3000
+
+CMD ["serve", "-s", "dist", "-l", "3000"]
