@@ -12,7 +12,7 @@ import (
 const (
 	envPort   = "PORT"
 	envAPIKey = "OPENAI_API_KEY"
-	envDBURI  = "DB_URI"
+	envDBPath = "DB_PATH"
 
 	envCORSOrigins = "CORS_ALLOWED_ORIGINS"
 	envCORSMethods = "CORS_ALLOWED_METHODS"
@@ -50,13 +50,13 @@ func initConfig() (config.AppConfig, error) {
 	cfg := config.AppConfig{
 		Port:        config.GetString(envPort, defaultPort),
 		APIKey:      config.GetString(envAPIKey, ""),
-		DBURI:       config.GetString(envDBURI, ""),
+		DBPath:      config.GetString(envDBPath, "./app.db"),
 		CORSOrigins: config.GetStrings(envCORSOrigins, defaultCORSOrigin),
 		CORSMethods: config.GetStrings(envCORSMethods, defaultCORSMethods),
 		CORSHeaders: config.GetStrings(envCORSHeaders, defaultCORSHeaders),
 	}
 
-	if cfg.APIKey == "" && cfg.DBURI == "" {
+	if cfg.APIKey == "" {
 		return config.AppConfig{}, fmt.Errorf("API Key and DB URI is needed")
 	}
 

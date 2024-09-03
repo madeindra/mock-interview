@@ -13,13 +13,13 @@ import (
 
 type handler struct {
 	ai openai.Client
-	db data.Client
+	db *data.Database
 }
 
 func NewHandler(cfg config.AppConfig) *chi.Mux {
 	h := &handler{
 		ai: openai.NewOpenAI(cfg.APIKey),
-		db: data.NewMongo(cfg.DBURI),
+		db: data.New(cfg.DBPath),
 	}
 
 	r := chi.NewRouter()

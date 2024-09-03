@@ -1,88 +1,60 @@
 package data
 
 import (
-	"context"
+	"database/sql"
 	"log"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-type Client interface {
-	InsertChat(ChatEntry) (string, error)
-	GetChat(string) (ChatEntry, error)
-	UpdateChat(string, ChatEntry) error
-	DeleteChat(string) error
+type Database struct {
+	conn *sql.DB
 }
 
-type Mongo struct {
-	db *mongo.Database
+func New(dbPath string) *Database {
+	var err error
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	migrate(db)
+
+	return &Database{conn: db}
 }
 
-const (
-	database   = "interview"
-	collection = "chat"
-)
+func migrate(db *sql.DB) {
+	chatUserTable := `CREATE TABLE IF NOT EXISTS chat_users (
+		id VARCHAR PRIMARY KEY,
+		secret VARCHAR NOT NULL
+	);`
 
-func NewMongo(uri string) *Mongo {
-	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
-	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
+	chatTable := `CREATE TABLE IF NOT EXISTS chats (
+		id VARCHAR PRIMARY KEY,
+		chat_user_id VARCHAR,
+		role VARCHAR,
+		text VARCHAR,
+		audio VARCHAR,
+		FOREIGN KEY(chat_user_id) REFERENCES chat_users(id)
+	);`
 
-	client, err := mongo.Connect(context.Background(), opts)
+	tx, err := db.Begin()
 	if err != nil {
-		log.Fatalf("failed to connect to MongoDB: %v", err)
+		log.Fatal(err)
 	}
+	defer tx.Rollback()
 
-	err = client.Ping(context.Background(), nil)
+	_, err = tx.Exec(chatUserTable)
 	if err != nil {
-		log.Fatalf("failed to ping MongoDB: %v", err)
+		log.Fatal(err)
 	}
 
-	return &Mongo{
-		db: client.Database(database),
-	}
-}
-
-func (m *Mongo) InsertChat(data ChatEntry) (string, error) {
-	if data.ID == "" {
-		data.ID = uuid.New().String()
-	}
-
-	_, err := m.db.Collection(collection).InsertOne(context.Background(), data)
+	_, err = tx.Exec(chatTable)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
 	}
 
-	return data.ID, nil
-}
-
-func (m *Mongo) GetChat(id string) (ChatEntry, error) {
-	var data ChatEntry
-
-	err := m.db.Collection(collection).FindOne(context.Background(), bson.M{"_id": id}).Decode(&data)
-	if err != nil {
-		return ChatEntry{}, err
+	if err := tx.Commit(); err != nil {
+		log.Fatal(err)
 	}
-
-	return data, nil
-}
-
-func (m *Mongo) UpdateChat(id string, data ChatEntry) error {
-	_, err := m.db.Collection(collection).UpdateOne(context.Background(), bson.M{"_id": id}, bson.M{"$set": data})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Mongo) DeleteChat(id string) error {
-	_, err := m.db.Collection(collection).DeleteOne(context.Background(), bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

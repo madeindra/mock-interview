@@ -8,7 +8,7 @@ import (
 type AppConfig struct {
 	Port   string
 	APIKey string
-	DBURI  string
+	DBPath string
 
 	CORSOrigins []string
 	CORSMethods []string

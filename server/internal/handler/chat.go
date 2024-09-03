@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/madeindra/mock-interview/server/internal/data"
 	"github.com/madeindra/mock-interview/server/internal/middleware"
 	"github.com/madeindra/mock-interview/server/internal/model"
 	"github.com/madeindra/mock-interview/server/internal/openai"
@@ -65,21 +64,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	entry := data.ChatEntry{
-		Secret: hashed,
-		History: []openai.ChatMessage{
-			{
-				Role:    openai.ROLE_SYSTEM,
-				Content: systempPrompt,
-			},
-			{
-				Role:    openai.ROLE_ASSISTANT,
-				Content: initialText,
-			},
-		},
-	}
-
-	newID, err := h.db.InsertChat(entry)
+	newUser, err := h.db.CreateChatUser(hashed)
 	if err != nil {
 		log.Printf("failed to create new chat: %v", err)
 		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
@@ -87,8 +72,22 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	if _, err := h.db.CreateChat(newUser.ID, string(openai.ROLE_SYSTEM), systempPrompt, ""); err != nil {
+		log.Printf("failed to create chat: %v", err)
+		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
+
+		return
+	}
+
+	if _, err := h.db.CreateChat(newUser.ID, string(openai.ROLE_ASSISTANT), initialText, audioBase64); err != nil {
+		log.Printf("failed to create chat: %v", err)
+		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
+
+		return
+	}
+
 	initialChat := model.StartChatResponse{
-		ID:     newID,
+		ID:     newUser.ID,
 		Secret: plainSecret,
 		Chat: model.Chat{
 			Text:  initialText,
@@ -110,17 +109,25 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	entry, err := h.db.GetChat(userID)
+	user, err := h.db.GetChatUser(userID)
 	if err != nil {
-		log.Printf("failed to get chat: %v", err)
-		util.SendResponse(w, nil, "failed to get chat", http.StatusInternalServerError)
+		log.Printf("failed to get chat user: %v", err)
+		util.SendResponse(w, nil, "failed to get chat user", http.StatusNotFound)
 
 		return
 	}
 
-	if err := util.CompareHash(userSecret, entry.Secret); err != nil {
+	if err := util.CompareHash(userSecret, user.Secret); err != nil {
 		log.Println("invalid user secret")
 		util.SendResponse(w, nil, "invalid user secret", http.StatusUnauthorized)
+
+		return
+	}
+
+	entries, err := h.db.GetChatsByChatUserID(user.ID)
+	if err != nil {
+		log.Printf("failed to get chat: %v", err)
+		util.SendResponse(w, nil, "failed to get chat", http.StatusInternalServerError)
 
 		return
 	}
@@ -155,7 +162,9 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	chatHistory := append(entry.History, openai.ChatMessage{
+	history := util.ConvertToChatMessage(entries)
+
+	chatHistory := append(history, openai.ChatMessage{
 		Role:    openai.ROLE_USER,
 		Content: transcript.Text,
 	})
@@ -194,15 +203,16 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
-	chatHistory = append(chatHistory, openai.ChatMessage{
-		Role:    openai.ROLE_ASSISTANT,
-		Content: chatCompletion.Choices[0].Message.Content,
-	})
+	if _, err := h.db.CreateChat(userID, string(openai.ROLE_USER), transcript.Text, ""); err != nil {
+		log.Printf("failed to create chat: %v", err)
+		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
 
-	entry.History = chatHistory
-	if err := h.db.UpdateChat(userID, entry); err != nil {
-		log.Printf("failed to update chat: %v", err)
-		util.SendResponse(w, nil, "failed to update chat", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := h.db.CreateChat(userID, string(openai.ROLE_ASSISTANT), chatCompletion.Choices[0].Message.Content, speechBase64); err != nil {
+		log.Printf("failed to create chat: %v", err)
+		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
 
 		return
 	}
@@ -231,7 +241,22 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	entry, err := h.db.GetChat(userID)
+	user, err := h.db.GetChatUser(userID)
+	if err != nil {
+		log.Printf("failed to get chat user: %v", err)
+		util.SendResponse(w, nil, "failed to get chat user", http.StatusNotFound)
+
+		return
+	}
+
+	if err := util.CompareHash(userSecret, user.Secret); err != nil {
+		log.Println("invalid user secret")
+		util.SendResponse(w, nil, "invalid user secret", http.StatusUnauthorized)
+
+		return
+	}
+
+	entry, err := h.db.GetChatsByChatUserID(user.ID)
 	if err != nil {
 		log.Printf("failed to get chat: %v", err)
 		util.SendResponse(w, nil, "failed to get chat", http.StatusInternalServerError)
@@ -239,14 +264,9 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := util.CompareHash(userSecret, entry.Secret); err != nil {
-		log.Println("invalid user secret")
-		util.SendResponse(w, nil, "invalid user secret", http.StatusUnauthorized)
+	history := util.ConvertToChatMessage(entry)
 
-		return
-	}
-
-	chatHistory := append(entry.History, openai.ChatMessage{
+	chatHistory := append(history, openai.ChatMessage{
 		Role:    openai.ROLE_USER,
 		Content: "That is the end of the mock interview, thank you, please provide your feedbacks on my strength and which area to improve, and whether you are confident that I fits the role.",
 	})
@@ -285,15 +305,9 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 	}
 	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
-	chatHistory = append(chatHistory, openai.ChatMessage{
-		Role:    openai.ROLE_ASSISTANT,
-		Content: chatCompletion.Choices[0].Message.Content,
-	})
-
-	entry.History = chatHistory
-	if err := h.db.UpdateChat(userID, entry); err != nil {
-		log.Printf("failed to update chat: %v", err)
-		util.SendResponse(w, nil, "failed to update chat", http.StatusInternalServerError)
+	if _, err := h.db.CreateChat(userID, string(openai.ROLE_ASSISTANT), chatCompletion.Choices[0].Message.Content, speechBase64); err != nil {
+		log.Printf("failed to create chat: %v", err)
+		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
 
 		return
 	}

@@ -9,7 +9,7 @@ This project is a mock interviewing tool built with AI. It consists of a Go serv
 The server is built with Go 1.22 and is located in the `server` directory. It requires the following environment variables:
 
 - `OPENAI_API_KEY`: Your OpenAI API key
-- `DB_URI`: MongoDB connection string
+- `DB_PATH`: Path to SQLite database
 
 These configurations are optional:
 - `PORT`: The port number for the server to run
@@ -35,9 +35,7 @@ To run the project using Docker and docker-compose, follow these steps:
 
    ```
    OPENAI_API_KEY=your_openai_api_key_here
-   MONGO_USERNAME=your_mongo_username
-   MONGO_PASSWORD=your_mongo_password
-   MONGO_DATABASE=your_mongo_database_name
+   DB_PATH=your_database_path_here
    ```
 
 4. Set the `VITE_BACKEND_URL` in client Dockerfile accordingly if you change the server's port mapping
@@ -60,7 +58,7 @@ To run the project using Docker and docker-compose, follow these steps:
 
 ### Notes
 
-When running the server using the provided `docker-compose.yml`, the `DB_URI` environment variable is infered from Mongo's credential.
+When running the server using the provided `docker-compose.yml`, the `DB_PATH` is optional.
 
 If there the server's port is changed or if client and server are deployed in separate domain, please update the `BACKEND_URL` arguments on the client's Dockerfile.
 

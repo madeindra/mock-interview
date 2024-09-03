@@ -219,11 +219,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
               : isRecording 
                 ? 'Stop Recording' 
                   : hasEnded
-                  ? 'Good Luck!'
+                  ? 'This interview has ended'
                 : 'Start Recording'
           }
         </button>
-        {hasStarted && (
+        {hasStarted && !hasEnded && (
           <button
             onClick={endInterview}
             disabled={isProcessing || isTyping || hasEnded}
