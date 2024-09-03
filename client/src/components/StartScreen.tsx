@@ -73,7 +73,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
       {hasMessages && (
         <Navbar
           showBackIcon
@@ -83,33 +83,33 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
         />
       )}
       <div className="container mx-auto mt-10 p-4 flex-grow">
-        <div className="max-w-md mx-auto bg-dark-surface p-8 rounded-xl shadow-lg">
-          <h1 className="text-3xl font-bold mb-6 text-center text-dark-on-surface">Mock Interview</h1>
+        <div className="max-w-md mx-auto bg-[#2B2B3B] p-8 rounded-xl shadow-lg">
+          <h1 className="text-3xl font-bold mb-6 text-center text-white">Mock Interview</h1>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="role" className="block mb-2 text-dark-on-surface font-semibold">Role</label>
+              <label htmlFor="role" className="block mb-2 text-white font-semibold">Role</label>
               <input
                 type="text"
                 id="role"
                 value={role}
                 onChange={(e) => updateRole(e.target.value)}
                 placeholder="e.g. Fullstack Developer"
-                className="input-field w-full"
+                className="w-full p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
               />
             </div>
             <div>
-              <label htmlFor="skills" className="block mb-2 text-dark-on-surface font-semibold">Skills</label>
+              <label htmlFor="skills" className="block mb-2 text-white font-semibold">Skills</label>
               <textarea
                 id="skills"
                 value={skills}
                 onChange={(e) => updateSkills(e.target.value)}
                 placeholder="e.g. Javascript, Typescript, REST API"
-                className="input-field w-full h-32"
+                className="w-full h-32 p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
               ></textarea>
             </div>
-            <button type="submit" className="btn-primary w-full text-dark-on-surface">
+            <button type="submit" className="w-full p-4 bg-[#3E64FF] text-white font-bold rounded-xl hover:bg-opacity-90 transition-all duration-300">
               Start Interview
             </button>
           </form>

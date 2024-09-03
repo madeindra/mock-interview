@@ -216,7 +216,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
       <Navbar 
         showBackIcon 
         showForwardIcon
@@ -225,51 +225,52 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         onStartOver={handleStartOver}
         disableForward={true}
       />
-      <div className="container mx-auto p-4 flex-grow flex flex-col">
-        <div ref={chatContainerRef} className="flex-grow overflow-y-auto mb-4 bg-dark-surface rounded-xl p-4 shadow-inner">
-          {messages.map((message, index) => (
-            <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
-              <span className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-dark-primary text-dark-on-surface' : 'bg-dark-secondary text-dark-on-surface'}`}>
-                {message.isUser ? message.text : (message.displayedText || '')}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-between items-center space-x-4">
+      <div ref={chatContainerRef} className="flex-grow overflow-y-auto px-4 py-2">
+        {messages.map((message, index) => (
+          <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
+            <span className={`inline-block p-3 rounded-2xl ${
+              message.isUser 
+                ? 'bg-[#3E64FF] text-white' 
+                : 'bg-[#2B2B3B] text-white'
+            }`}>
+              {message.isUser ? message.text : (message.displayedText || '')}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between items-center space-x-4 p-4 bg-[#1E1E2E]">
+        <button
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={isProcessing || isTyping || hasEnded}
+          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
+            isProcessing || isTyping || hasEnded
+              ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
+              : isRecording
+                ? 'bg-[#FF3E3E] text-white animate-pulse'
+                : 'bg-[#3E64FF] text-white hover:bg-opacity-90'
+          }`}
+        >
+          {isProcessing
+            ? 'Processing...'
+            : isTyping
+              ? 'Responding...'
+              : isRecording
+                ? 'Stop Recording'
+                : hasEnded
+                  ? 'This interview has ended'
+                  : 'Start Recording'
+          }
+        </button>
+        {hasStarted && !hasEnded && (
           <button
-            onClick={isRecording ? stopRecording : startRecording}
+            onClick={endInterview}
             disabled={isProcessing || isTyping || hasEnded}
-            className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${isProcessing || isTyping || hasEnded
-                ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
-                : isRecording
-                  ? 'bg-dark-error text-dark-on-surface animate-pulse'
-                  : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
-              }`}
+            className="w-3/12 p-4 rounded-xl font-bold text-lg text-white hover:bg-opacity-90 transition-all duration-300 bg-[#FF3E3E]"
           >
-            {isProcessing
-              ? 'Processing...'
-              : isTyping
-                ? 'Responding...'
-                : isRecording
-                  ? 'Stop Recording'
-                  : hasEnded
-                    ? 'This interview has ended'
-                    : 'Start Recording'
-            }
+            End
           </button>
-          {hasStarted && !hasEnded && (
-            <button
-              onClick={endInterview}
-              disabled={isProcessing || isTyping || hasEnded}
-              className={`p-4 rounded-xl font-bold text-lg text-dark-on-surface hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || hasEnded
-                  ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
-                  : 'bg-dark-error text-dark-on-surface hover:bg-opacity-90'
-                }`}
-            >
-              End
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
