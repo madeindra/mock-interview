@@ -12,8 +12,7 @@
             "program": "${workspaceFolder}/server/main.go",
             "env": {
                 "PORT": "8080",
-                "OPENAI_API_KEY": "api-key",
-                "DB_URI": "mongodb://username:password@localhost:27017/db?authSource=admin"
+                "OPENAI_API_KEY": "api-key"
             }
         },
         {
