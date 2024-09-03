@@ -1,6 +1,9 @@
 package data
 
 import (
+	"database/sql"
+	"strings"
+
 	"github.com/google/uuid"
 )
 
@@ -17,14 +20,38 @@ type Entry struct {
 	Audio      string `json:"audio"`
 }
 
-func (d *Database) CreateChat(chatUserID, role, text, audio string) (*Entry, error) {
+func (d *Database) CreateChat(tx *sql.Tx, chatUserID, role, text, audio string) (*Entry, error) {
 	id := uuid.New().String()
-	_, err := d.conn.Exec("INSERT INTO chats (id, chat_user_id, role, text, audio) VALUES (?, ?, ?, ?, ?)",
+	_, err := tx.Exec("INSERT INTO chats (id, chat_user_id, role, text, audio) VALUES (?, ?, ?, ?, ?)",
 		id, chatUserID, role, text, audio)
 	if err != nil {
 		return nil, err
 	}
 	return &Entry{ID: id, ChatUserID: chatUserID, Role: role, Text: text, Audio: audio}, nil
+}
+
+func (d *Database) CreateChats(tx *sql.Tx, chatUserID string, chats []Entry) ([]Entry, error) {
+	query := "INSERT INTO chats (id, chat_user_id, role, text, audio) VALUES "
+	var values []interface{}
+	placeholders := make([]string, len(chats))
+
+	for i, chat := range chats {
+		chat.ID = uuid.New().String()
+		chat.ChatUserID = chatUserID
+
+		placeholders[i] = "(?, ?, ?, ?, ?)"
+
+		values = append(values, chat.ID, chat.ChatUserID, chat.Role, chat.Text, chat.Audio)
+	}
+
+	query += strings.Join(placeholders, ",")
+
+	_, err := tx.Exec(query, values...)
+	if err != nil {
+		return nil, err
+	}
+
+	return chats, nil
 }
 
 func (d *Database) GetChatsByChatUserID(chatUserID string) ([]Entry, error) {

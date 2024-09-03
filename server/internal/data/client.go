@@ -58,3 +58,15 @@ func migrate(db *sql.DB) {
 		log.Fatal(err)
 	}
 }
+
+func (d *Database) BeginTx() (*sql.Tx, error) {
+	return d.conn.Begin()
+}
+
+func (d *Database) RollbackTx(tx *sql.Tx) error {
+	return tx.Rollback()
+}
+
+func (d *Database) CommitTx(tx *sql.Tx) error {
+	return tx.Commit()
+}

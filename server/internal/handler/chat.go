@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/madeindra/mock-interview/server/internal/data"
 	"github.com/madeindra/mock-interview/server/internal/middleware"
 	"github.com/madeindra/mock-interview/server/internal/model"
 	"github.com/madeindra/mock-interview/server/internal/openai"
@@ -64,7 +65,16 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	newUser, err := h.db.CreateChatUser(hashed)
+	tx, err := h.db.BeginTx()
+	if err != nil {
+		log.Printf("failed to begin transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
+
+		return
+	}
+	defer tx.Rollback()
+
+	newUser, err := h.db.CreateChatUser(tx, hashed)
 	if err != nil {
 		log.Printf("failed to create new chat: %v", err)
 		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
@@ -72,16 +82,26 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if _, err := h.db.CreateChat(newUser.ID, string(openai.ROLE_SYSTEM), systempPrompt, ""); err != nil {
+	if _, err := h.db.CreateChats(tx, newUser.ID, []data.Entry{
+		{
+			Role: string(openai.ROLE_SYSTEM),
+			Text: systempPrompt,
+		},
+		{
+			Role:  string(openai.ROLE_ASSISTANT),
+			Text:  initialText,
+			Audio: audioBase64,
+		},
+	}); err != nil {
 		log.Printf("failed to create chat: %v", err)
 		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
 
 		return
 	}
 
-	if _, err := h.db.CreateChat(newUser.ID, string(openai.ROLE_ASSISTANT), initialText, audioBase64); err != nil {
-		log.Printf("failed to create chat: %v", err)
-		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
+	if err := tx.Commit(); err != nil {
+		log.Printf("failed to commit transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
 
 		return
 	}
@@ -203,16 +223,35 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
-	if _, err := h.db.CreateChat(userID, string(openai.ROLE_USER), transcript.Text, ""); err != nil {
+	tx, err := h.db.BeginTx()
+	if err != nil {
+		log.Printf("failed to begin transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
+
+		return
+	}
+	defer tx.Rollback()
+
+	if _, err := h.db.CreateChats(tx, userID, []data.Entry{
+		{
+			Role: string(openai.ROLE_USER),
+			Text: transcript.Text,
+		},
+		{
+			Role:  string(openai.ROLE_ASSISTANT),
+			Text:  chatCompletion.Choices[0].Message.Content,
+			Audio: speechBase64,
+		},
+	}); err != nil {
 		log.Printf("failed to create chat: %v", err)
 		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
 
 		return
 	}
 
-	if _, err := h.db.CreateChat(userID, string(openai.ROLE_ASSISTANT), chatCompletion.Choices[0].Message.Content, speechBase64); err != nil {
-		log.Printf("failed to create chat: %v", err)
-		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
+	if err := tx.Commit(); err != nil {
+		log.Printf("failed to commit transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
 
 		return
 	}
@@ -305,9 +344,25 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 	}
 	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
-	if _, err := h.db.CreateChat(userID, string(openai.ROLE_ASSISTANT), chatCompletion.Choices[0].Message.Content, speechBase64); err != nil {
+	tx, err := h.db.BeginTx()
+	if err != nil {
+		log.Printf("failed to begin transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
+
+		return
+	}
+	defer tx.Rollback()
+
+	if _, err := h.db.CreateChat(tx, userID, string(openai.ROLE_ASSISTANT), chatCompletion.Choices[0].Message.Content, speechBase64); err != nil {
 		log.Printf("failed to create chat: %v", err)
 		util.SendResponse(w, nil, "failed to create chat", http.StatusInternalServerError)
+
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("failed to commit transaction: %v", err)
+		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
 
 		return
 	}

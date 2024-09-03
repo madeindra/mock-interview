@@ -1,6 +1,8 @@
 package data
 
 import (
+	"database/sql"
+
 	"github.com/google/uuid"
 )
 
@@ -9,12 +11,13 @@ type ChatUser struct {
 	Secret string `json:"secret"`
 }
 
-func (d *Database) CreateChatUser(secret string) (*ChatUser, error) {
+func (d *Database) CreateChatUser(tx *sql.Tx, secret string) (*ChatUser, error) {
 	id := uuid.New().String()
-	_, err := d.conn.Exec("INSERT INTO chat_users (id, secret) VALUES (?, ?)", id, secret)
+	_, err := tx.Exec("INSERT INTO chat_users (id, secret) VALUES (?, ?)", id, secret)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ChatUser{ID: id, Secret: secret}, nil
 }
 
