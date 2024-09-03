@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from './Navbar';
 
 interface Message {
   text: string;
@@ -18,20 +19,34 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [hasEnded, setHasEnded] = useState(false);
+  
   const navigate = useNavigate();
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initialText = sessionStorage.getItem('initialText');
-    if (initialText) {
-      setMessages([{ text: initialText, isUser: false, displayedText: '' }]);
+    const storedMessages = sessionStorage.getItem('messages');
+
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages));
+    } else if (initialText) {
+      const initialMessage = { text: initialText, isUser: false, displayedText: '' };
+      setMessages([initialMessage]);
       typeMessage(0, initialText);
       playAudio(sessionStorage.getItem('initialAudio'));
+      sessionStorage.setItem('messages', JSON.stringify([initialMessage]));
     } else {
       navigate('/');
     }
   }, [navigate]);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      sessionStorage.setItem('messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -41,7 +56,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
 
   const typeMessage = (messageIndex: number, text: string) => {
     setIsTyping(true);
-    
+
     let i = 0;
     const typingInterval = setInterval(() => {
       setMessages(prevMessages => {
@@ -54,9 +69,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         }
         return newMessages;
       });
-  
+
       i++;
-      
+
       if (i > text.length) {
         clearInterval(typingInterval);
         setIsTyping(false);
@@ -151,9 +166,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     const id = sessionStorage.getItem('interviewId');
     const secret = sessionStorage.getItem('interviewSecret');
     const authString = btoa(`${id}:${secret}`);
-  
+
     setIsProcessing(true);
-  
+
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/end`, {
         method: 'GET',
@@ -161,12 +176,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
           'Authorization': `Basic ${authString}`,
         },
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok && data.data) {
         const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
-  
+
         setMessages(prevMessages => {
           const newMessages = [...prevMessages, botMessage];
           // Start typing effect for the bot message after state update
@@ -175,7 +190,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
           }, 0);
           return newMessages;
         });
-  
+
         playAudio(data.data.answer.audio);
       } else {
         setError(data.message || 'Failed to end the interview. Please try again.');
@@ -189,53 +204,72 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     }
   };
 
+  const handleStartOver = () => {
+    sessionStorage.removeItem('messages');
+    sessionStorage.removeItem('initialText');
+    sessionStorage.removeItem('initialAudio');
+    navigate('/');
+  };
+
+  const handleBack = () => {
+    navigate('/');
+  };
+
   return (
-    <div className="container mx-auto p-4 h-screen flex flex-col">
-      <div ref={chatContainerRef} className="flex-grow overflow-y-auto mb-4 bg-dark-surface rounded-xl p-4 shadow-inner">
-        {messages.map((message, index) => (
-          <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
-            <span className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-dark-primary text-dark-on-surface' : 'bg-dark-secondary text-dark-on-surface'}`}>
-              {message.isUser ? message.text : (message.displayedText || '')}
-            </span>
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between items-center space-x-4">
-        <button
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing || isTyping || hasEnded}
-          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${
-            isProcessing || isTyping || hasEnded
-              ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
-              : isRecording 
-                ? 'bg-dark-error text-dark-on-surface animate-pulse' 
-                : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
-          }`}
-        >
-          {isProcessing 
-            ? 'Processing...' 
-            : isTyping
-              ? 'Responding...'
-              : isRecording 
-                ? 'Stop Recording' 
-                  : hasEnded
-                  ? 'This interview has ended'
-                : 'Start Recording'
-          }
-        </button>
-        {hasStarted && !hasEnded && (
+    <div className="flex flex-col h-screen">
+      <Navbar 
+        showBackIcon 
+        showForwardIcon
+        showStartOver 
+        onBack={handleBack}
+        onStartOver={handleStartOver}
+        disableForward={true}
+      />
+      <div className="container mx-auto p-4 flex-grow flex flex-col">
+        <div ref={chatContainerRef} className="flex-grow overflow-y-auto mb-4 bg-dark-surface rounded-xl p-4 shadow-inner">
+          {messages.map((message, index) => (
+            <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
+              <span className={`inline-block p-3 rounded-lg ${message.isUser ? 'bg-dark-primary text-dark-on-surface' : 'bg-dark-secondary text-dark-on-surface'}`}>
+                {message.isUser ? message.text : (message.displayedText || '')}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between items-center space-x-4">
           <button
-            onClick={endInterview}
+            onClick={isRecording ? stopRecording : startRecording}
             disabled={isProcessing || isTyping || hasEnded}
-            className={`p-4 rounded-xl font-bold text-lg text-dark-on-surface hover:bg-opacity-90 transition-all duration-300 ${
-              isProcessing || isTyping || hasEnded
+            className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${isProcessing || isTyping || hasEnded
                 ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
-                : 'bg-dark-error text-dark-on-surface hover:bg-opacity-90'
-            }`}
+                : isRecording
+                  ? 'bg-dark-error text-dark-on-surface animate-pulse'
+                  : 'bg-dark-primary text-dark-on-surface hover:bg-opacity-90'
+              }`}
           >
-            End
+            {isProcessing
+              ? 'Processing...'
+              : isTyping
+                ? 'Responding...'
+                : isRecording
+                  ? 'Stop Recording'
+                  : hasEnded
+                    ? 'This interview has ended'
+                    : 'Start Recording'
+            }
           </button>
-        )}
+          {hasStarted && !hasEnded && (
+            <button
+              onClick={endInterview}
+              disabled={isProcessing || isTyping || hasEnded}
+              className={`p-4 rounded-xl font-bold text-lg text-dark-on-surface hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || hasEnded
+                  ? 'bg-dark-secondary text-dark-on-surface cursor-not-allowed'
+                  : 'bg-dark-error text-dark-on-surface hover:bg-opacity-90'
+                }`}
+            >
+              End
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Navbar from './Navbar';
 
 interface StartScreenProps {
   setError: (error: string | null) => void;
@@ -11,12 +12,21 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
 
   const [role, setRole] = useState(tempRole || '');
   const [skills, setSkills] = useState(tempSkills || '');
+  const [hasMessages, setHasMessages] = useState(false);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedMessages = sessionStorage.getItem('messages');
+    setHasMessages(!!storedMessages);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const skillsArray = skills.split(',').map(skill => skill.trim());
-    
+
+    sessionStorage.removeItem('messages');
+
     navigate('/processing');
 
     try {
@@ -58,38 +68,52 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
     sessionStorage.setItem('skills', skills);
   }
 
+  const handleForward = () => {
+    navigate('/chat');
+  };
+
   return (
-    <div className="container mx-auto mt-10 p-4">
-      <div className="max-w-md mx-auto bg-dark-surface p-8 rounded-xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-6 text-center text-dark-on-surface">Mock Interview</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="role" className="block mb-2 text-dark-on-surface font-semibold">Role</label>
-            <input
-              type="text"
-              id="role"
-              value={role}
-              onChange={(e) => updateRole(e.target.value)}
-              placeholder="e.g. Fullstack Developer"
-              className="input-field w-full"
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="skills" className="block mb-2 text-dark-on-surface font-semibold">Skills</label>
-            <textarea
-              id="skills"
-              value={skills}
-              onChange={(e) => updateSkills(e.target.value)}
-              placeholder="e.g. Javascript, Typescript, REST API"
-              className="input-field w-full h-32"
-              required
-            ></textarea>
-          </div>
-          <button type="submit" className="btn-primary w-full text-dark-on-surface">
-            Start Interview
-          </button>
-        </form>
+    <div className="flex flex-col h-screen">
+      {hasMessages && (
+        <Navbar
+          showBackIcon
+          showForwardIcon
+          onForward={handleForward}
+          disableBack={true}
+        />
+      )}
+      <div className="container mx-auto mt-10 p-4 flex-grow">
+        <div className="max-w-md mx-auto bg-dark-surface p-8 rounded-xl shadow-lg">
+          <h1 className="text-3xl font-bold mb-6 text-center text-dark-on-surface">Mock Interview</h1>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="role" className="block mb-2 text-dark-on-surface font-semibold">Role</label>
+              <input
+                type="text"
+                id="role"
+                value={role}
+                onChange={(e) => updateRole(e.target.value)}
+                placeholder="e.g. Fullstack Developer"
+                className="input-field w-full"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="skills" className="block mb-2 text-dark-on-surface font-semibold">Skills</label>
+              <textarea
+                id="skills"
+                value={skills}
+                onChange={(e) => updateSkills(e.target.value)}
+                placeholder="e.g. Javascript, Typescript, REST API"
+                className="input-field w-full h-32"
+                required
+              ></textarea>
+            </div>
+            <button type="submit" className="btn-primary w-full text-dark-on-surface">
+              Start Interview
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
