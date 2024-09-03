@@ -6,8 +6,11 @@ interface StartScreenProps {
 }
 
 const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
-  const [role, setRole] = useState('');
-  const [skills, setSkills] = useState('');
+  const tempRole = sessionStorage.getItem('role');
+  const tempSkills = sessionStorage.getItem('skills');
+
+  const [role, setRole] = useState(tempRole || '');
+  const [skills, setSkills] = useState(tempSkills || '');
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,6 +48,16 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
     }
   };
 
+  const updateRole = (role: string) => {
+    setRole(role);
+    sessionStorage.setItem('role', role);
+  }
+
+  const updateSkills = (skills: string) => {
+    setSkills(skills);
+    sessionStorage.setItem('skills', skills);
+  }
+
   return (
     <div className="container mx-auto mt-10 p-4">
       <div className="max-w-md mx-auto bg-dark-surface p-8 rounded-xl shadow-lg">
@@ -56,7 +69,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
               type="text"
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
+              onChange={(e) => updateRole(e.target.value)}
               placeholder="e.g. Fullstack Developer"
               className="input-field w-full"
               required
@@ -67,7 +80,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
             <textarea
               id="skills"
               value={skills}
-              onChange={(e) => setSkills(e.target.value)}
+              onChange={(e) => updateSkills(e.target.value)}
               placeholder="e.g. Javascript, Typescript, REST API"
               className="input-field w-full h-32"
               required
