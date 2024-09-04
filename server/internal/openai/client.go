@@ -12,6 +12,8 @@ import (
 )
 
 type Client interface {
+	IsKeyValid() (bool, error)
+	Status() (Status, error)
 	Chat([]ChatMessage) (ChatResponse, error)
 	TextToSpeech(string) (io.ReadCloser, error)
 	Transcribe(io.ReadCloser, string) (TranscriptResponse, error)
@@ -29,6 +31,7 @@ type OpenAI struct {
 
 const (
 	baseURL            = "https://api.openai.com/v1"
+	statusURL          = "https://status.openai.com/api/v2"
 	chatModel          = "gpt-4o"
 	transcriptModel    = "whisper-1"
 	transcriptLanguage = "en"
@@ -46,6 +49,75 @@ func NewOpenAI(apiKey string) *OpenAI {
 		TTSVoice:           ttsVoice,
 		TranscriptLanguage: transcriptLanguage,
 	}
+}
+
+func (c *OpenAI) IsKeyValid() (bool, error) {
+	url, err := url.JoinPath(c.BaseURL, "/models")
+	if err != nil {
+		return false, err
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (c *OpenAI) Status() (Status, error) {
+	url, err := url.JoinPath(statusURL, "/components.json")
+	if err != nil {
+		return STATUS_UNKNOWN, err
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return STATUS_UNKNOWN, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return STATUS_UNKNOWN, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return STATUS_UNKNOWN, nil
+	}
+
+	var statusResp ComponentStatusResponse
+	err = unmarshalJSONResponse(resp, &statusResp)
+	if err != nil {
+		return STATUS_UNKNOWN, err
+	}
+
+	for _, component := range statusResp.Components {
+		if component.Name == "api" {
+			switch component.Status {
+			case "operational":
+				return STATUS_OPERATIONAL, nil
+			case "degraded_performance":
+				return STATUS_DEGRADED_PERFORMANCE, nil
+			case "partial_outage":
+				return STATUS_PARTIAL_OUTAGE, nil
+			case "major_outage":
+				return STATUS_MAJOR_OUTAGE, nil
+			}
+		}
+	}
+
+	return STATUS_UNKNOWN, nil
 }
 
 func (c *OpenAI) Chat(messages []ChatMessage) (ChatResponse, error) {
