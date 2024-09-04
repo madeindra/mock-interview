@@ -10,9 +10,11 @@ interface StartScreenProps {
 const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
   const tempRole = sessionStorage.getItem('role');
   const tempSkills = sessionStorage.getItem('skills');
+  const tempLanguage = sessionStorage.getItem('language');
 
   const [role, setRole] = useState(tempRole || '');
   const [skills, setSkills] = useState(tempSkills || '');
+  const [language, setLanguage] = useState(tempLanguage || 'en');
   const [hasMessages, setHasMessages] = useState(false);
 
   const navigate = useNavigate();
@@ -36,7 +38,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role, skills: skillsArray }),
+        body: JSON.stringify({ role, skills: skillsArray, language  }),
       });
 
       const data = await response.json();
@@ -68,6 +70,11 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
   const updateSkills = (skills: string) => {
     setSkills(skills);
     sessionStorage.setItem('skills', skills);
+  }
+
+  const updateLanguage = (language: string) => {
+    setLanguage(language);
+    sessionStorage.setItem('language', language);
   }
 
   const handleForward = () => {
@@ -111,6 +118,19 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
                 className="w-full h-32 p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
               ></textarea>
+            </div>
+            <div>
+              <label htmlFor="language" className="block mb-2 text-white font-semibold">Language</label>
+              <select
+                id="language"
+                value={language}
+                onChange={(e) => updateLanguage(e.target.value)}
+                className="w-full p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
+                required
+              >
+                <option value="en">English</option>
+                <option value="id">Bahasa Indonesia</option>
+              </select>
             </div>
             <button type="submit" className="w-full p-4 bg-[#3E64FF] text-white font-bold rounded-xl hover:bg-opacity-90 transition-all duration-300">
               Start Interview
