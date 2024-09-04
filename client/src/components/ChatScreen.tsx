@@ -27,18 +27,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const initialText = sessionStorage.getItem('initialText');
-    const initialAudio = sessionStorage.getItem('initialAudio')
-    const storedMessages = sessionStorage.getItem('messages');
+    const initialText = sessionStorage.getItem('initialText') || '';
+    const initialAudio = sessionStorage.getItem('initialAudio') || '';
     const chatLanguage = sessionStorage.getItem('chatLanguage') || '';
+    const storedMessages = sessionStorage.getItem('messages');
 
     if (storedMessages) {
       setMessages(JSON.parse(storedMessages));
     } else if (initialText) {
       const initialMessage = { text: initialText, isUser: false, displayedText: '' };
       setMessages([initialMessage]);
-      typeMessage(0, initialText);
-      if (initialAudio) { 
+      typeMessage(0, initialText);      
+      if (initialAudio && initialAudio != 'undefined') { 
         playAudio(initialAudio);
       } else {
         synthesizeText(initialText, chatLanguage);
