@@ -19,7 +19,7 @@ These configurations are optional:
 
 ## Client
 
-The client is built using React TypeScript with Vite and Node.js 20. It is located in the `client` directory. It requires one environment variable:
+The client is built using React TypeScript with Vite and Node.js 20. It is located in the `client` directory. It has one optional environment variable:
 
 - `VITE_BACKEND_URL`: URL of the backend server
 

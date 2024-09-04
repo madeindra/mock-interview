@@ -9,10 +9,11 @@ interface Message {
 }
 
 interface ChatScreenProps {
+  backendHost: string;
   setError: (error: string | null) => void;
 }
 
-const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -120,7 +121,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     setIsProcessing(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/answer`, {
+      const response = await fetch(`${backendHost}/chat/answer`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${authString}`,
@@ -171,7 +172,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
     setIsProcessing(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/end`, {
+      const response = await fetch(`${backendHost}/chat/end`, {
         method: 'GET',
         headers: {
           'Authorization': `Basic ${authString}`,
@@ -219,6 +220,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
   return (
     <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
       <Navbar
+        backendHost={backendHost}
         showBackIcon
         showForwardIcon
         showStartOver
@@ -264,8 +266,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
         {hasStarted && !hasEnded && (
           <button
             onClick={endInterview}
-            disabled={isProcessing || isTyping || hasEnded}
-            className={`w-3/12 p-4 rounded-xl font-bold text-lg text-white hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || hasEnded
+            disabled={isProcessing || isTyping || isRecording || hasEnded}
+            className={`w-3/12 p-4 rounded-xl font-bold text-lg hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || isRecording || hasEnded
               ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
                 : 'bg-[#FF3E3E] text-white hover:bg-opacity-90'
             }`}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 interface NavbarProps {
+  backendHost: string;
   showBackIcon?: boolean;
   showForwardIcon?: boolean;
   showStartOver?: boolean;
@@ -22,6 +23,7 @@ interface StatusResponse {
 }
 
 const Navbar: React.FC<NavbarProps> = ({
+  backendHost,
   showBackIcon = false,
   showForwardIcon = false,
   showStartOver = false,
@@ -37,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/status`);
+        const response = await fetch(`${backendHost}/chat/status`);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }

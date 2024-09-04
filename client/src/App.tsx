@@ -5,6 +5,7 @@ import ProcessingScreen from './components/ProcessingScreen';
 import ChatScreen from './components/ChatScreen';
 
 const App: React.FC = () => {
+  const backendHost = import.meta.env.VITE_BACKEND_URL || 'http://0.0.0.0:8080';
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -24,9 +25,9 @@ const App: React.FC = () => {
         )}
         <div className="flex-grow">
           <Routes>
-            <Route path="/" element={<StartScreen setError={setError} />} />
+            <Route path="/" element={<StartScreen backendHost={backendHost} setError={setError} />} />
             <Route path="/processing" element={<ProcessingScreen setError={setError} />} />
-            <Route path="/chat" element={<ChatScreen setError={setError} />} />
+            <Route path="/chat" element={<ChatScreen  backendHost={backendHost}setError={setError} />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

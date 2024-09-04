@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
 
 interface StartScreenProps {
+  backendHost: string;
   setError: (error: string | null) => void;
 }
 
-const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
+const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
   const tempRole = sessionStorage.getItem('role');
   const tempSkills = sessionStorage.getItem('skills');
 
@@ -30,7 +31,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
     navigate('/processing');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/chat/start`, {
+      const response = await fetch(`${backendHost}/chat/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -76,6 +77,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ setError }) => {
     <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
       {hasMessages && (
         <Navbar
+          backendHost={backendHost}
           showBackIcon
           showForwardIcon
           onForward={handleForward}
