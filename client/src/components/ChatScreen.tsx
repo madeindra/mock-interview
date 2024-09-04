@@ -13,14 +13,6 @@ interface ChatScreenProps {
   setError: (error: string | null) => void;
 }
 
-const languageEN: string = "en";
-const languageID: string = "id";
-
-const languageMap: Record<string, string> = {
-  [languageEN]: "en-US",
-  [languageID]: "id-ID"
-};
-
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -36,8 +28,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
 
   useEffect(() => {
     const initialText = sessionStorage.getItem('initialText');
+    const initialAudio = sessionStorage.getItem('initialAudio')
     const storedMessages = sessionStorage.getItem('messages');
-    const chatLanguage = sessionStorage.getItem('chatLanguage') || languageEN;
+    const chatLanguage = sessionStorage.getItem('chatLanguage') || '';
 
     if (storedMessages) {
       setMessages(JSON.parse(storedMessages));
@@ -45,10 +38,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       const initialMessage = { text: initialText, isUser: false, displayedText: '' };
       setMessages([initialMessage]);
       typeMessage(0, initialText);
-      if (chatLanguage == languageEN) { 
-        playAudio(sessionStorage.getItem('initialAudio'));
+      if (initialAudio) { 
+        playAudio(initialAudio);
       } else {
-        synthesizeText(initialText, languageMap[chatLanguage]);
+        synthesizeText(initialText, chatLanguage);
       }
       sessionStorage.setItem('messages', JSON.stringify([initialMessage]));
     } else {
@@ -155,10 +148,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
           typeMessage(messages.length + 1, data.data.answer.text);
         });
 
-        if (data.data.language == languageEN) { 
+        if (data?.data?.answer?.audio) { 
           playAudio(data.data.answer.audio);
         } else {
-          synthesizeText(data.data.answer.text, languageMap[data?.data?.language]);
+          synthesizeText(data?.data?.answer?.text, data?.data?.language);
         }
 
         setHasStarted(true);
@@ -216,10 +209,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
           return newMessages;
         });
 
-        if (data.data.language == languageEN) { 
+        if (data?.data?.answer?.audio) { 
           playAudio(data.data.answer.audio);
         } else {
-          synthesizeText(data.data.answer.text, languageMap[data?.data?.language]);
+          synthesizeText(data?.data?.answer?.text, data?.data?.language);
         }
       } else {
         setError(data.message || 'Failed to end the interview. Please try again.');

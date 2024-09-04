@@ -7,6 +7,11 @@ interface StartScreenProps {
   setError: (error: string | null) => void;
 }
 
+const languageOptions = [
+  { name: "English", code: "en-US" },
+  { name: "Bahasa Indonesia", code: "id-ID" },
+];
+
 const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
   const tempRole = sessionStorage.getItem('role');
   const tempSkills = sessionStorage.getItem('skills');
@@ -128,8 +133,9 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
                 className="w-full p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
               >
-                <option value="en">English</option>
-                <option value="id">Bahasa Indonesia</option>
+                {languageOptions.map((lang) =>  (
+                  <option key={lang.code} value={lang.code}>{lang.name}</option>
+                ))}
               </select>
             </div>
             <button type="submit" className="w-full p-4 bg-[#3E64FF] text-white font-bold rounded-xl hover:bg-opacity-90 transition-all duration-300">
