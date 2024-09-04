@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"encoding/base64"
 	"encoding/json"
-	"io"
 	"log"
 	"net/http"
 
@@ -68,38 +66,21 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		chatLanguage = h.ai.GetLanguage(startChatRequest.Language)
 	}
 
-	systempPrompt, err := openai.GetSystemPrompt(startChatRequest.Role, startChatRequest.Skills, chatLanguage)
+	systempPrompt, initialText, err := util.GetChatAssets(h.ai, startChatRequest.Role, startChatRequest.Skills, chatLanguage)
 	if err != nil {
-		log.Printf("failed to get system prompt: %v", err)
+		log.Printf("failed to get system prompt or initial text: %v", err)
 		util.SendResponse(w, nil, "failed to prepare chat", http.StatusInternalServerError)
 
 		return
 	}
 
-	initialText, err := openai.GetInitialChat(startChatRequest.Role, chatLanguage)
+	initialAudio, err := util.GenerateSpeech(h.ai, chatLanguage, initialText)
 	if err != nil {
-		log.Printf("failed to get initial text: %v", err)
-		util.SendResponse(w, nil, "failed to prepare chat", http.StatusInternalServerError)
+		log.Printf("failed to generate speech: %v", err)
+		util.SendResponse(w, nil, "failed to generate speech", http.StatusInternalServerError)
 
 		return
 	}
-
-	initialAudio, err := h.ai.TextToSpeech(util.SanitizeString(initialText))
-	if err != nil {
-		log.Printf("failed to create initial audio: %v", err)
-		util.SendResponse(w, nil, "failed to prepare chat", http.StatusInternalServerError)
-
-		return
-	}
-
-	audioByte, err := io.ReadAll(initialAudio)
-	if err != nil {
-		log.Printf("failed to read speech: %v", err)
-		util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
-
-		return
-	}
-	audioBase64 := base64.StdEncoding.EncodeToString(audioByte)
 
 	plainSecret := util.GenerateRandom()
 	hashed, err := util.CreateHash(plainSecret)
@@ -135,7 +116,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		{
 			Role:  string(openai.ROLE_ASSISTANT),
 			Text:  initialText,
-			Audio: audioBase64,
+			Audio: initialAudio,
 		},
 	}); err != nil {
 		log.Printf("failed to create chat: %v", err)
@@ -157,7 +138,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		Language: startChatRequest.Language,
 		Chat: model.Chat{
 			Text:  initialText,
-			Audio: audioBase64,
+			Audio: initialAudio,
 		},
 	}
 

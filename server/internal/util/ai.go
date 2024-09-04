@@ -8,6 +8,24 @@ import (
 	"github.com/madeindra/mock-interview/server/internal/openai"
 )
 
+func GetChatAssets(ai openai.Client, role string, skills []string, language string) (string, string, error) {
+	if ai == nil {
+		return "", "", fmt.Errorf("unsupported client")
+	}
+
+	systempPrompt, err := openai.GetSystemPrompt(role, skills, language)
+	if err != nil {
+		return "", "", err
+	}
+
+	initialChat, err := openai.GetInitialChat(role, language)
+	if err != nil {
+		return "", "", err
+	}
+
+	return systempPrompt, initialChat, nil
+}
+
 func TranscribeSpeech(ai openai.Client, file io.ReadCloser, filename, language string) (string, error) {
 	if ai == nil {
 		return "", fmt.Errorf("unsupported client")
@@ -47,7 +65,7 @@ func GenerateSpeech(ai openai.Client, language, text string) (string, error) {
 		return "", fmt.Errorf("unsupported client")
 	}
 
-	if ai.IsSpeechAvailable(language) {
+	if !ai.IsSpeechAvailable(language) {
 		return "", nil // quietly ignore unsupported languages
 	}
 
