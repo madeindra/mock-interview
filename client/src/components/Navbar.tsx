@@ -55,7 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({
     const intervalId = setInterval(fetchStatus, 30000); // Fetch every 30 seconds
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [backendHost]);
 
   const getStatusColor = () => {
     if (!status) return 'bg-red-500';
