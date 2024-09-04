@@ -265,7 +265,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ setError }) => {
           <button
             onClick={endInterview}
             disabled={isProcessing || isTyping || hasEnded}
-            className="w-3/12 p-4 rounded-xl font-bold text-lg text-white hover:bg-opacity-90 transition-all duration-300 bg-[#FF3E3E]"
+            className={`w-3/12 p-4 rounded-xl font-bold text-lg text-white hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || hasEnded
+              ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
+                : 'bg-[#FF3E3E] text-white hover:bg-opacity-90'
+            }`}
           >
             End
           </button>
