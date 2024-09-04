@@ -19,7 +19,8 @@ type Client interface {
 	Transcribe(io.ReadCloser, string, string) (TranscriptResponse, error)
 
 	GetDefaultTranscriptLanguage() string
-	GetLanguageCode(lang string) string
+	GetLanguage(code string) string
+	GetCode(lang string) string
 	IsSpeechAvailable(string) bool
 }
 
@@ -277,8 +278,12 @@ func (c *OpenAI) GetDefaultTranscriptLanguage() string {
 	return string(Language(c.TranscriptLanguage))
 }
 
-func (c *OpenAI) GetLanguageCode(lang string) string {
-	return string(LanguageMapping[lang])
+func (c *OpenAI) GetLanguage(code string) string {
+	return string(CodeToLanguage[code])
+}
+
+func (c *OpenAI) GetCode(lang string) string {
+	return LanguageToCode[Language(lang)]
 }
 
 func (c *OpenAI) IsSpeechAvailable(lang string) bool {

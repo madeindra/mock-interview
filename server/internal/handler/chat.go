@@ -65,7 +65,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 
 	chatLanguage := h.ai.GetDefaultTranscriptLanguage()
 	if startChatRequest.Language != "" {
-		chatLanguage = h.ai.GetLanguageCode(startChatRequest.Language)
+		chatLanguage = h.ai.GetLanguage(startChatRequest.Language)
 	}
 
 	systempPrompt, err := openai.GetSystemPrompt(startChatRequest.Role, startChatRequest.Skills, chatLanguage)
@@ -278,7 +278,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
-		Language: user.Language,
+		Language: h.ai.GetCode(user.Language),
 		Prompt: model.Chat{
 			Text: transcriptText,
 		},
@@ -372,7 +372,7 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
-		Language: user.Language,
+		Language: h.ai.GetCode(user.Language),
 		Answer: model.Chat{
 			Text:  answerText,
 			Audio: answerAudio,
