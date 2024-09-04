@@ -19,7 +19,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
 
   const [role, setRole] = useState(tempRole || '');
   const [skills, setSkills] = useState(tempSkills || '');
-  const [language, setLanguage] = useState(tempLanguage || 'en');
+  const [language, setLanguage] = useState(tempLanguage || 'en-US');
   const [hasMessages, setHasMessages] = useState(false);
 
   const navigate = useNavigate();
