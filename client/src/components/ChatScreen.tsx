@@ -29,7 +29,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   useEffect(() => {
     const initialText = sessionStorage.getItem('initialText') || '';
     const initialAudio = sessionStorage.getItem('initialAudio') || '';
-    const chatLanguage = sessionStorage.getItem('chatLanguage') || '';
+    const chatLanguage = sessionStorage.getItem('language') || '';
     const storedMessages = sessionStorage.getItem('messages');
 
     if (storedMessages) {
@@ -231,7 +231,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
     sessionStorage.removeItem('messages');
     sessionStorage.removeItem('initialText');
     sessionStorage.removeItem('initialAudio');
-    sessionStorage.removeItem('chatLanguage');
+    sessionStorage.removeItem('language');
     navigate('/');
   };
 
