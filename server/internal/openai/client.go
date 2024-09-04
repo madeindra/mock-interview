@@ -103,7 +103,7 @@ func (c *OpenAI) Status() (Status, error) {
 	}
 
 	for _, component := range statusResp.Components {
-		if component.Name == "api" {
+		if component.Name == "API" {
 			switch component.Status {
 			case "operational":
 				return STATUS_OPERATIONAL, nil
