@@ -19,7 +19,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [hasEnded, setHasEnded] = useState(false);
+  const [hasEnded, setHasEnded] = useState(sessionStorage.getItem('hasEnded') === 'true');
 
   const navigate = useNavigate();
 
@@ -214,6 +214,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
         } else {
           synthesizeText(data?.data?.answer?.text, data?.data?.language);
         }
+        setHasEnded(true);
+        sessionStorage.setItem('hasEnded', 'true');
       } else {
         setError(data.message || 'Failed to end the interview. Please try again.');
       }
@@ -221,7 +223,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       console.error('Error ending interview:', error);
       setError('Failed to end the interview. Please check your connection and try again.');
     } finally {
-      setHasEnded(true);
       setIsProcessing(false);
     }
   };
