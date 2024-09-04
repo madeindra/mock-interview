@@ -14,6 +14,46 @@ import (
 	"github.com/madeindra/mock-interview/server/internal/util"
 )
 
+func (h *handler) Status(w http.ResponseWriter, _ *http.Request) {
+	isKeyValid, err := h.ai.IsKeyValid()
+	if err != nil {
+		log.Printf("failed to check key validity: %v", err)
+		util.SendResponse(w, nil, "failed to check key validity", http.StatusInternalServerError)
+
+		return
+	}
+
+	status, err := h.ai.Status()
+	if err != nil {
+		log.Printf("failed to check API availability: %v", err)
+		util.SendResponse(w, nil, "failed to check API availability", http.StatusInternalServerError)
+
+		return
+	}
+
+	var apiState *bool
+
+	switch status {
+	case openai.STATUS_OPERATIONAL:
+		apiState = util.Pointer(true)
+	case openai.STATUS_DEGRADED_PERFORMANCE, openai.STATUS_PARTIAL_OUTAGE, openai.STATUS_MAJOR_OUTAGE:
+		apiState = util.Pointer(false)
+	case openai.STATUS_UNKNOWN:
+		apiState = nil
+	}
+
+	apiStatus := util.Pointer(string(status))
+
+	response := model.StatusResponse{
+		Server:    true,
+		Key:       isKeyValid,
+		API:       apiState,
+		ApiStatus: apiStatus,
+	}
+
+	util.SendResponse(w, response, "success", http.StatusOK)
+}
+
 func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 	var startChatRequest model.StartChatRequest
 	if err := json.NewDecoder(req.Body).Decode(&startChatRequest); err != nil {

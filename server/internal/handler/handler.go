@@ -30,6 +30,7 @@ func NewHandler(cfg config.AppConfig) *chi.Mux {
 		AllowedHeaders: cfg.CORSHeaders,
 	}))
 
+	r.Get("/chat/status", h.Status)
 	r.Post("/chat/start", h.StartChat)
 
 	r.Group(func(r chi.Router) {
