@@ -14,14 +14,25 @@ type ChatAsset struct {
 }
 
 var (
-	//go:embed templates/chat.txt
-	initalChat string
+	//go:embed templates/chat.en.txt
+	initalChatEN string
 
-	//go:embed templates/system.txt
-	systemPrompt string
+	//go:embed templates/chat.id.txt
+	initalChatID string
+
+	//go:embed templates/system.en.txt
+	systemPromptEN string
+
+	//go:embed templates/system.id.txt
+	systemPromptID string
 )
 
-func GetSystemPrompt(roleName string, skills []string) (string, error) {
+func GetSystemPrompt(roleName string, skills []string, language string) (string, error) {
+	systemPrompt := systemPromptEN
+	if language == "id" {
+		systemPrompt = systemPromptID
+	}
+
 	t, err := template.New("prompt").Parse(systemPrompt)
 	if err != nil {
 		return "", err
@@ -43,7 +54,12 @@ func GetSystemPrompt(roleName string, skills []string) (string, error) {
 	return buf.String(), nil
 }
 
-func GetInitialChat(roleName string) (string, error) {
+func GetInitialChat(roleName string, language string) (string, error) {
+	initalChat := initalChatEN
+	if language == "id" {
+		initalChat = initalChatID
+	}
+
 	t, err := template.New("chat").Parse(initalChat)
 	if err != nil {
 		return "", err

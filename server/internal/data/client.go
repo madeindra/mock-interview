@@ -26,7 +26,8 @@ func New(dbPath string) *Database {
 func migrate(db *sql.DB) {
 	chatUserTable := `CREATE TABLE IF NOT EXISTS chat_users (
 		id VARCHAR PRIMARY KEY,
-		secret VARCHAR NOT NULL
+		secret VARCHAR NOT NULL,
+		language VARCHAR DEFAULT 'en'
 	);`
 
 	chatTable := `CREATE TABLE IF NOT EXISTS chats (

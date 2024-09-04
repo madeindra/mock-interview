@@ -1,0 +1,1 @@
+Hai! Bagaimana kabarmu? Saya Mai! Aku akan memandu kamu dalam interview untuk posisi {{.Role}}. Kamu boleh mulai dengan perkenalan diri.

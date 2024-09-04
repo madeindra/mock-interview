@@ -1,1 +1,0 @@
-Hi there! How are you doing? I'm Nova! I will be your interviewer for the {{.Role}} role. Let's start this interview with your introduction.

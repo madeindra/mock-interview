@@ -6,15 +6,17 @@ type Response struct {
 }
 
 type StartChatResponse struct {
-	ID     string `json:"id"`
-	Secret string `json:"secret"`
+	ID       string `json:"id"`
+	Secret   string `json:"secret"`
+	Language string `json:"language"`
 
 	Chat
 }
 
 type AnswerChatResponse struct {
-	Prompt Chat `json:"prompt,omitempty"`
-	Answer Chat `json:"answer,omitempty"`
+	Language string `json:"language"`
+	Prompt   Chat   `json:"prompt,omitempty"`
+	Answer   Chat   `json:"answer,omitempty"`
 }
 
 type StatusResponse struct {

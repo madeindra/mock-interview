@@ -16,7 +16,7 @@ type Client interface {
 	Status() (Status, error)
 	Chat([]ChatMessage) (ChatResponse, error)
 	TextToSpeech(string) (io.ReadCloser, error)
-	Transcribe(io.ReadCloser, string) (TranscriptResponse, error)
+	Transcribe(io.ReadCloser, string, string) (TranscriptResponse, error)
 }
 
 type OpenAI struct {
@@ -195,7 +195,7 @@ func (c *OpenAI) TextToSpeech(input string) (io.ReadCloser, error) {
 	return respBody, nil
 }
 
-func (c *OpenAI) Transcribe(file io.ReadCloser, filename string) (TranscriptResponse, error) {
+func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (TranscriptResponse, error) {
 	if file == nil {
 		return TranscriptResponse{}, fmt.Errorf("audio is nil")
 	}
@@ -224,7 +224,12 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename string) (TranscriptResp
 		return TranscriptResponse{}, err
 	}
 
-	err = writer.WriteField("language", c.TranscriptLanguage)
+	transcriptLanguage := c.TranscriptLanguage
+	if language != "" {
+		transcriptLanguage = language
+	}
+
+	err = writer.WriteField("language", transcriptLanguage)
 	if err != nil {
 		return TranscriptResponse{}, err
 	}

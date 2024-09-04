@@ -14,6 +14,11 @@ import (
 	"github.com/madeindra/mock-interview/server/internal/util"
 )
 
+const (
+	LanguageEnglish    = "en"
+	LanguageIndonesian = "id"
+)
+
 func (h *handler) Status(w http.ResponseWriter, _ *http.Request) {
 	isKeyValid, err := h.ai.IsKeyValid()
 	if err != nil {
@@ -63,7 +68,12 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	systempPrompt, err := openai.GetSystemPrompt(startChatRequest.Role, startChatRequest.Skills)
+	chatLanguage := "en"
+	if startChatRequest.Language == LanguageIndonesian {
+		chatLanguage = "id"
+	}
+
+	systempPrompt, err := openai.GetSystemPrompt(startChatRequest.Role, startChatRequest.Skills, chatLanguage)
 	if err != nil {
 		log.Printf("failed to get system prompt: %v", err)
 		util.SendResponse(w, nil, "failed to prepare chat", http.StatusInternalServerError)
@@ -71,7 +81,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	initialText, err := openai.GetInitialChat(startChatRequest.Role)
+	initialText, err := openai.GetInitialChat(startChatRequest.Role, chatLanguage)
 	if err != nil {
 		log.Printf("failed to get initial text: %v", err)
 		util.SendResponse(w, nil, "failed to prepare chat", http.StatusInternalServerError)
@@ -114,7 +124,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 	}
 	defer tx.Rollback()
 
-	newUser, err := h.db.CreateChatUser(tx, hashed)
+	newUser, err := h.db.CreateChatUser(tx, hashed, chatLanguage)
 	if err != nil {
 		log.Printf("failed to create new chat: %v", err)
 		util.SendResponse(w, nil, "failed to create new chat", http.StatusInternalServerError)
@@ -147,8 +157,9 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	initialChat := model.StartChatResponse{
-		ID:     newUser.ID,
-		Secret: plainSecret,
+		ID:       newUser.ID,
+		Secret:   plainSecret,
+		Language: chatLanguage,
 		Chat: model.Chat{
 			Text:  initialText,
 			Audio: audioBase64,
@@ -207,7 +218,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 	defer file.Close()
 
-	transcript, err := h.ai.Transcribe(file, fileHeader.Filename)
+	transcript, err := h.ai.Transcribe(file, fileHeader.Filename, user.Language)
 	if err != nil {
 		log.Printf("failed to transcribe audio: %v", err)
 		util.SendResponse(w, nil, "failed to transcribe audio", http.StatusInternalServerError)
@@ -244,24 +255,27 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	speechInput := util.SanitizeString(chatCompletion.Choices[0].Message.Content)
+	var speechBase64 string
+	if user.Language == LanguageEnglish {
+		speechInput := util.SanitizeString(chatCompletion.Choices[0].Message.Content)
 
-	speech, err := h.ai.TextToSpeech(speechInput)
-	if err != nil {
-		log.Printf("failed to create speech: %v", err)
-		util.SendResponse(w, nil, "failed to create speech", http.StatusInternalServerError)
+		speech, err := h.ai.TextToSpeech(speechInput)
+		if err != nil {
+			log.Printf("failed to create speech: %v", err)
+			util.SendResponse(w, nil, "failed to create speech", http.StatusInternalServerError)
 
-		return
+			return
+		}
+
+		speechByte, err := io.ReadAll(speech)
+		if err != nil {
+			log.Printf("failed to read speech: %v", err)
+			util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
+
+			return
+		}
+		speechBase64 = base64.StdEncoding.EncodeToString(speechByte)
 	}
-
-	speechByte, err := io.ReadAll(speech)
-	if err != nil {
-		log.Printf("failed to read speech: %v", err)
-		util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
-
-		return
-	}
-	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
 	tx, err := h.db.BeginTx()
 	if err != nil {
@@ -297,6 +311,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
+		Language: user.Language,
 		Prompt: model.Chat{
 			Text: transcript.Text,
 		},
@@ -365,24 +380,27 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	speechInput := util.SanitizeString(chatCompletion.Choices[0].Message.Content)
+	var speechBase64 string
+	if user.Language == LanguageEnglish {
+		speechInput := util.SanitizeString(chatCompletion.Choices[0].Message.Content)
 
-	speech, err := h.ai.TextToSpeech(speechInput)
-	if err != nil {
-		log.Printf("failed to create speech: %v", err)
-		util.SendResponse(w, nil, "failed to create speech", http.StatusInternalServerError)
+		speech, err := h.ai.TextToSpeech(speechInput)
+		if err != nil {
+			log.Printf("failed to create speech: %v", err)
+			util.SendResponse(w, nil, "failed to create speech", http.StatusInternalServerError)
 
-		return
+			return
+		}
+
+		speechByte, err := io.ReadAll(speech)
+		if err != nil {
+			log.Printf("failed to read speech: %v", err)
+			util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
+
+			return
+		}
+		speechBase64 = base64.StdEncoding.EncodeToString(speechByte)
 	}
-
-	speechByte, err := io.ReadAll(speech)
-	if err != nil {
-		log.Printf("failed to read speech: %v", err)
-		util.SendResponse(w, nil, "failed to read speech", http.StatusInternalServerError)
-
-		return
-	}
-	speechBase64 := base64.StdEncoding.EncodeToString(speechByte)
 
 	tx, err := h.db.BeginTx()
 	if err != nil {
@@ -408,6 +426,7 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
+		Language: user.Language,
 		Answer: model.Chat{
 			Text:  chatCompletion.Choices[0].Message.Content,
 			Audio: speechBase64,
