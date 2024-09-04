@@ -13,6 +13,14 @@ interface ChatScreenProps {
   setError: (error: string | null) => void;
 }
 
+const languageEN: string = "en";
+const languageID: string = "id";
+
+const languageMap: Record<string, string> = {
+  [languageEN]: "en-US",
+  [languageID]: "id-ID"
+};
+
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -29,6 +37,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   useEffect(() => {
     const initialText = sessionStorage.getItem('initialText');
     const storedMessages = sessionStorage.getItem('messages');
+    const chatLanguage = sessionStorage.getItem('chatLanguage') || languageEN;
 
     if (storedMessages) {
       setMessages(JSON.parse(storedMessages));
@@ -36,7 +45,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       const initialMessage = { text: initialText, isUser: false, displayedText: '' };
       setMessages([initialMessage]);
       typeMessage(0, initialText);
-      playAudio(sessionStorage.getItem('initialAudio'));
+      if (chatLanguage == languageEN) { 
+        playAudio(sessionStorage.getItem('initialAudio'));
+      } else {
+        synthesizeText(initialText, languageMap[chatLanguage]);
+      }
       sessionStorage.setItem('messages', JSON.stringify([initialMessage]));
     } else {
       navigate('/');
@@ -142,7 +155,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
           typeMessage(messages.length + 1, data.data.answer.text);
         });
 
-        playAudio(data.data.answer.audio);
+        if (data.data.language == languageEN) { 
+          playAudio(data.data.answer.audio);
+        } else {
+          synthesizeText(data.data.answer.text, languageMap[data?.data?.language]);
+        }
 
         setHasStarted(true);
       } else {
@@ -163,6 +180,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       audio.play();
     }
   };
+
+  const synthesizeText = async (text: string, language: string) => {
+    const audio = new SpeechSynthesisUtterance(text);
+    audio.lang = language;
+    window.speechSynthesis.speak(audio);
+  }
 
   const endInterview = async () => {
     const id = sessionStorage.getItem('interviewId');
@@ -193,7 +216,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
           return newMessages;
         });
 
-        playAudio(data.data.answer.audio);
+        if (data.data.language == languageEN) { 
+          playAudio(data.data.answer.audio);
+        } else {
+          synthesizeText(data.data.answer.text, languageMap[data?.data?.language]);
+        }
       } else {
         setError(data.message || 'Failed to end the interview. Please try again.');
       }
@@ -210,6 +237,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
     sessionStorage.removeItem('messages');
     sessionStorage.removeItem('initialText');
     sessionStorage.removeItem('initialAudio');
+    sessionStorage.removeItem('chatLanguage');
     navigate('/');
   };
 

@@ -46,6 +46,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
         sessionStorage.setItem('interviewSecret', data.data.secret);
         sessionStorage.setItem('initialAudio', data.data.audio);
         sessionStorage.setItem('initialText', data.data.text);
+        sessionStorage.setItem('chatLanguage', data.data.language);
         navigate('/chat');
       } else {
         const errorMessage = data.message || 'Failed processing your request, please try again';
