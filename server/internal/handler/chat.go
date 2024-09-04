@@ -45,10 +45,10 @@ func (h *handler) Status(w http.ResponseWriter, _ *http.Request) {
 	apiStatus := util.Pointer(string(status))
 
 	response := model.StatusResponse{
-		Server:    true,
-		Key:       isKeyValid,
-		API:       apiState,
-		ApiStatus: apiStatus,
+		Server:    true,       // always true when the server is running
+		Key:       isKeyValid, // true if the API key is valid, false otherwise
+		API:       apiState,   // nil if status unknown, true if operational, false otherwise
+		ApiStatus: apiStatus,  // always return the status string
 	}
 
 	util.SendResponse(w, response, "success", http.StatusOK)
