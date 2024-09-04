@@ -48,7 +48,7 @@ To run the project using Docker and docker-compose, follow these steps:
 
    This will start the MongoDB database, the Go server, and the React client.
 
-6. Access the client application by opening a web browser and navigating to `http://localhost`.
+6. Access the client application by opening a web browser and navigating to `http://localhost:3000`.
 
 7. To stop the containers, use the following command:
 
