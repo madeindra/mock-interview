@@ -56,3 +56,15 @@ type Component struct {
 	Name   string `json:"name"`
 	Status Status `json:"status"`
 }
+
+type Language string
+
+const (
+	LANGUAGE_ENGLISH    Language = "en"
+	LANGUAGE_INDONESIAN Language = "id"
+)
+
+var LanguageMapping = map[string]Language{
+	"en-US": LANGUAGE_ENGLISH,
+	"id-ID": LANGUAGE_INDONESIAN,
+}

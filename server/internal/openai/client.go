@@ -17,6 +17,10 @@ type Client interface {
 	Chat([]ChatMessage) (ChatResponse, error)
 	TextToSpeech(string) (io.ReadCloser, error)
 	Transcribe(io.ReadCloser, string, string) (TranscriptResponse, error)
+
+	GetDefaultTranscriptLanguage() string
+	GetLanguageCode(lang string) string
+	IsSpeechAvailable(string) bool
 }
 
 type OpenAI struct {
@@ -38,6 +42,10 @@ const (
 	ttsModel           = "tts-1"
 	ttsVoice           = "nova"
 )
+
+var supportedTranscriptLanguages = map[Language]struct{}{
+	LANGUAGE_ENGLISH: {},
+}
 
 func NewOpenAI(apiKey string) *OpenAI {
 	return &OpenAI{
@@ -263,6 +271,19 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 	}
 
 	return transcriptResp, nil
+}
+
+func (c *OpenAI) GetDefaultTranscriptLanguage() string {
+	return string(Language(c.TranscriptLanguage))
+}
+
+func (c *OpenAI) GetLanguageCode(lang string) string {
+	return string(LanguageMapping[lang])
+}
+
+func (c *OpenAI) IsSpeechAvailable(lang string) bool {
+	_, ok := supportedTranscriptLanguages[Language(lang)]
+	return ok
 }
 
 func getResponseBody(resp *http.Response) (io.ReadCloser, error) {
