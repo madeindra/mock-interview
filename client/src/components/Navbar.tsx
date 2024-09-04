@@ -119,12 +119,12 @@ const Navbar: React.FC<NavbarProps> = ({
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
         >
-          {showTooltip && status && (
+          {showTooltip && (
             <div className="absolute top-full right-2 mt-2 p-2 bg-white text-black rounded shadow-lg z-10">
-              <p>Database: {status.backend ? 'Up' : 'Down'}</p>
-              <p>API: {status.api === null ? 'Unknown' : (status.api ? 'Up' : 'Down')}</p>
-              <p>Status: {status.apiStatus ? capitalizeFirstLetter(status.apiStatus) : 'Unknown'}</p>
-              <p>Authorized: {status.key ? 'Yes' : 'No'}</p>
+              <p>Database: {status?.backend ? 'Up' : 'Down'}</p>
+              <p>API: {status?.api === null ? 'Unknown' : (status?.api ? 'Up' : 'Down')}</p>
+              <p>Status: {status?.apiStatus ? capitalizeFirstLetter(status?.apiStatus) : 'Unknown'}</p>
+              <p>Authorized: {status?.key ? 'Yes' : 'No'}</p>
             </div>
           )}
         </div>
