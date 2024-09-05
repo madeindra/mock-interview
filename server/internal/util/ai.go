@@ -83,3 +83,20 @@ func GenerateSpeech(ai openai.Client, language, text string) (string, error) {
 
 	return base64.StdEncoding.EncodeToString(speechByte), nil
 }
+
+func GenerateSSML(ai openai.Client, text string) (string, error) {
+	if ai == nil {
+		return "", fmt.Errorf("unsupported client")
+	}
+
+	generated, err := ai.SSML(text)
+	if err != nil {
+		return "", err
+	}
+
+	if generated.SSML == "" {
+		return "", fmt.Errorf("empty ssml response")
+	}
+
+	return generated.SSML, nil
+}

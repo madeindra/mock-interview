@@ -82,6 +82,12 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var initialSSML string
+	if initialAudio == "" {
+		initialSSML, err = util.GenerateSSML(h.ai, initialText)
+		log.Printf("failed to generate ssml: %v", err)
+	}
+
 	plainSecret := util.GenerateRandom()
 	hashed, err := util.CreateHash(plainSecret)
 	if err != nil {
@@ -139,6 +145,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		Chat: model.Chat{
 			Text:  initialText,
 			Audio: initialAudio,
+			SSML:  initialSSML,
 		},
 	}
 
@@ -225,6 +232,12 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var answerSSML string
+	if answerAudio == "" {
+		answerSSML, err = util.GenerateSSML(h.ai, answerText)
+		log.Printf("failed to generate ssml: %v", err)
+	}
+
 	tx, err := h.db.BeginTx()
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
@@ -266,6 +279,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		Answer: model.Chat{
 			Text:  answerText,
 			Audio: answerAudio,
+			SSML:  answerSSML,
 		},
 	}
 
@@ -329,6 +343,12 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	var answerSSML string
+	if answerAudio == "" {
+		answerSSML, err = util.GenerateSSML(h.ai, answerText)
+		log.Printf("failed to generate ssml: %v", err)
+	}
+
 	tx, err := h.db.BeginTx()
 	if err != nil {
 		log.Printf("failed to begin transaction: %v", err)
@@ -357,6 +377,7 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		Answer: model.Chat{
 			Text:  answerText,
 			Audio: answerAudio,
+			SSML:  answerSSML,
 		},
 	}
 
