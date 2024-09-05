@@ -1,25 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
-
-interface Message {
-  text: string;
-  isUser: boolean;
-  displayedText?: string;
-}
+import { Message, useInterviewStore } from '../store';
 
 interface ChatScreenProps {
   backendHost: string;
   setError: (error: string | null) => void;
 }
 
+const useTypingEffect = (message: Message, speed: number = 25) => {
+  const [displayedText, setDisplayedText] = useState('');
+
+  useEffect(() => {
+    if (message.isAnimated && !message.hasAnimated) {
+      let i = 0;
+      const timer = setInterval(() => {
+        setDisplayedText(message.text.slice(0, i));
+        i++;
+        if (i > message.text.length) {
+          clearInterval(timer);
+          
+          message.hasAnimated = true;
+        }
+      }, speed);
+
+      return () => clearInterval(timer);
+    } else {
+      setDisplayedText(message.text);
+    }
+  }, [message, speed]);
+
+  return displayedText;
+};
+
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, initialText, initialAudio, language, isIntroDone, interviewId, interviewSecret, hasEnded, addMessage, setIsIntroDone, setHasEnded, resetStore } = useInterviewStore();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [hasEnded, setHasEnded] = useState(sessionStorage.getItem('hasEnded') === 'true');
 
   const navigate = useNavigate();
 
@@ -27,64 +45,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const initialText = sessionStorage.getItem('initialText') || '';
-    const initialAudio = sessionStorage.getItem('initialAudio') || '';
-    const chatLanguage = sessionStorage.getItem('language') || '';
-    const storedMessages = sessionStorage.getItem('messages');
-
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
-    } else if (initialText) {
-      const initialMessage = { text: initialText, isUser: false, displayedText: '' };
-      setMessages([initialMessage]);
-      typeMessage(0, initialText);      
-      if (initialAudio && initialAudio != 'undefined') { 
-        playAudio(initialAudio);
-      } else {
-        synthesizeText(initialText, chatLanguage);
-      }
-      sessionStorage.setItem('messages', JSON.stringify([initialMessage]));
-    } else {
+    if (!initialText) {
       navigate('/');
     }
-  }, [navigate]);
+  }, [navigate, initialText]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      sessionStorage.setItem('messages', JSON.stringify(messages));
+    if (!isIntroDone) {
+      if (initialAudio && initialAudio !== 'undefined') {
+        playAudio(initialAudio);
+      } else {
+        synthesizeText(initialText, language);
+      }
+      setIsIntroDone(true);
     }
-  }, [messages]);
+  }, [isIntroDone, initialText, initialAudio, language, setIsIntroDone])
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
-
-  const typeMessage = (messageIndex: number, text: string) => {
-    setIsTyping(true);
-
-    let i = 0;
-    const typingInterval = setInterval(() => {
-      setMessages(prevMessages => {
-        const newMessages = [...prevMessages];
-        if (newMessages[messageIndex]) {
-          newMessages[messageIndex] = {
-            ...newMessages[messageIndex],
-            displayedText: text.slice(0, i)
-          };
-        }
-        return newMessages;
-      });
-
-      i++;
-
-      if (i > text.length) {
-        clearInterval(typingInterval);
-        setIsTyping(false);
-      }
-    }, 25);
-  };
 
   const startRecording = async () => {
     try {
@@ -120,9 +101,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
     const formData = new FormData();
     formData.append('file', audioBlob, 'audio.webm');
 
-    const id = sessionStorage.getItem('interviewId');
-    const secret = sessionStorage.getItem('interviewSecret');
-    const authString = btoa(`${id}:${secret}`);
+    const authString = btoa(`${interviewId}:${interviewSecret}`);
 
     setIsProcessing(true);
 
@@ -139,16 +118,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
 
       if (response.ok && data.data) {
         const userMessage: Message = { text: data.data.prompt.text, isUser: true };
-        const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
+        const botMessage: Message = { text: data.data.answer.text, isUser: false, isAnimated: true };
 
-        setMessages(prev => [...prev, userMessage, botMessage]);
+        addMessage(userMessage);
+        addMessage(botMessage);
 
-        // Start typing effect for the bot message
-        requestAnimationFrame(() => {
-          typeMessage(messages.length + 1, data.data.answer.text);
-        });
-
-        if (data?.data?.answer?.audio) { 
+        if (data?.data?.answer?.audio) {
           playAudio(data.data.answer.audio);
         } else {
           synthesizeText(data?.data?.answer?.text, data?.data?.language);
@@ -181,9 +156,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   }
 
   const endInterview = async () => {
-    const id = sessionStorage.getItem('interviewId');
-    const secret = sessionStorage.getItem('interviewSecret');
-    const authString = btoa(`${id}:${secret}`);
+    const authString = btoa(`${interviewId}:${interviewSecret}`);
 
     setIsProcessing(true);
 
@@ -198,24 +171,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       const data = await response.json();
 
       if (response.ok && data.data) {
-        const botMessage: Message = { text: data.data.answer.text, isUser: false, displayedText: '' };
+        const botMessage: Message = { text: data.data.answer.text, isUser: false, isAnimated: true };
+        addMessage(botMessage);
 
-        setMessages(prevMessages => {
-          const newMessages = [...prevMessages, botMessage];
-          // Start typing effect for the bot message after state update
-          setTimeout(() => {
-            typeMessage(newMessages.length - 1, data.data.answer.text);
-          }, 0);
-          return newMessages;
-        });
-
-        if (data?.data?.answer?.audio) { 
+        if (data?.data?.answer?.audio) {
           playAudio(data.data.answer.audio);
         } else {
           synthesizeText(data?.data?.answer?.text, data?.data?.language);
         }
         setHasEnded(true);
-        sessionStorage.setItem('hasEnded', 'true');
       } else {
         setError(data.message || 'Failed to end the interview. Please try again.');
       }
@@ -228,10 +192,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   };
 
   const handleStartOver = () => {
-    sessionStorage.removeItem('messages');
-    sessionStorage.removeItem('initialText');
-    sessionStorage.removeItem('initialAudio');
-    sessionStorage.removeItem('language');
+    resetStore();
     navigate('/');
   };
 
@@ -254,10 +215,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
         {messages.map((message, index) => (
           <div key={index} className={`mb-4 ${message.isUser ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-3 rounded-2xl ${message.isUser
-                ? 'bg-[#3E64FF] text-white'
-                : 'bg-[#2B2B3B] text-white'
+              ? 'bg-[#3E64FF] text-white'
+              : 'bg-[#2B2B3B] text-white'
               }`}>
-              {message.isUser ? message.text : (message.displayedText || '')}
+              {message.isAnimated 
+                ? <AnimatedText message={message} />
+                : message.text
+              }
             </span>
           </div>
         ))}
@@ -266,33 +230,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       <div className="flex justify-between items-center space-x-4 p-4 bg-[#1E1E2E]">
         <button
           onClick={isRecording ? stopRecording : startRecording}
-          disabled={isProcessing || isTyping || hasEnded}
-          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${isProcessing || isTyping || hasEnded
-              ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
-              : isRecording
-                ? 'bg-[#FF3E3E] text-white animate-pulse'
-                : 'bg-[#3E64FF] text-white hover:bg-opacity-90'
+          disabled={isProcessing || hasEnded}
+          className={`w-full p-4 rounded-xl font-bold text-lg transition-all duration-300 ${isProcessing || hasEnded
+            ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
+            : isRecording
+              ? 'bg-[#FF3E3E] text-white animate-pulse'
+              : 'bg-[#3E64FF] text-white hover:bg-opacity-90'
             }`}
         >
           {isProcessing
             ? 'Processing...'
-            : isTyping
-              ? 'Responding...'
-              : isRecording
-                ? 'Stop Recording'
-                : hasEnded
-                  ? 'This interview has ended'
-                  : 'Start Recording'
+            : isRecording
+              ? 'Stop Recording'
+              : hasEnded
+                ? 'This interview has ended'
+                : 'Start Recording'
           }
         </button>
         {hasStarted && !hasEnded && (
           <button
             onClick={endInterview}
-            disabled={isProcessing || isTyping || isRecording || hasEnded}
-            className={`w-3/12 p-4 rounded-xl font-bold text-lg hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isTyping || isRecording || hasEnded
+            disabled={isProcessing || isRecording || hasEnded}
+            className={`w-3/12 p-4 rounded-xl font-bold text-lg hover:bg-opacity-90 transition-all duration-300 ${isProcessing || isRecording || hasEnded
               ? 'bg-[#2B2B3B] text-gray-400 cursor-not-allowed'
-                : 'bg-[#FF3E3E] text-white hover:bg-opacity-90'
-            }`}
+              : 'bg-[#FF3E3E] text-white hover:bg-opacity-90'
+              }`}
           >
             End
           </button>
@@ -300,6 +262,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       </div>
     </div>
   );
+};
+
+const AnimatedText: React.FC<{ message: Message }> = ({ message }) => {
+  const displayedText = useTypingEffect(message);
+  return <>{displayedText}</>;
 };
 
 export default ChatScreen;

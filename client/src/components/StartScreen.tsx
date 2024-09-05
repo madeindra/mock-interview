@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from './Navbar';
+import { useInterviewStore } from '../store';
 
 interface StartScreenProps {
   backendHost: string;
@@ -13,27 +14,15 @@ const languageOptions = [
 ];
 
 const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
-  const tempRole = sessionStorage.getItem('role');
-  const tempSkills = sessionStorage.getItem('skills');
-  const tempLanguage = sessionStorage.getItem('language');
-
-  const [role, setRole] = useState(tempRole || '');
-  const [skills, setSkills] = useState(tempSkills || '');
-  const [language, setLanguage] = useState(tempLanguage || 'en-US');
-  const [hasMessages, setHasMessages] = useState(false);
+  const { role, skills, language, messages, setIsIntroDone, setMessages, setRole, setSkills, setLanguage, setInterviewId, setInterviewSecret, setInitialAudio, setInitialText } = useInterviewStore();
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const storedMessages = sessionStorage.getItem('messages');
-    setHasMessages(!!storedMessages);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const skillsArray = skills.split(',').map(skill => skill.trim());
 
-    sessionStorage.removeItem('messages');
+    setMessages([]);
 
     navigate('/processing');
 
@@ -43,17 +32,21 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ role, skills: skillsArray, language  }),
+        body: JSON.stringify({ role, skills: skillsArray, language }),
       });
 
       const data = await response.json();
 
       if (response.ok && data.data) {
-        sessionStorage.setItem('interviewId', data.data?.id);
-        sessionStorage.setItem('interviewSecret', data.data?.secret);
-        sessionStorage.setItem('initialAudio', data.data?.audio);
-        sessionStorage.setItem('initialText', data.data?.text);
-        sessionStorage.setItem('language', data.data?.language);
+        setInterviewId(data.data?.id);
+        setInterviewSecret(data.data?.secret);
+        setInitialAudio(data.data?.audio);
+        setInitialText(data.data?.text);
+        setLanguage(data.data?.language);
+
+        setMessages([{ text: data.data?.text, isUser: false, isAnimated: true }]);
+        setIsIntroDone(false);
+
         navigate('/chat');
       } else {
         const errorMessage = data.message || 'Failed processing your request, please try again';
@@ -67,28 +60,13 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
     }
   };
 
-  const updateRole = (role: string) => {
-    setRole(role);
-    sessionStorage.setItem('role', role);
-  }
-
-  const updateSkills = (skills: string) => {
-    setSkills(skills);
-    sessionStorage.setItem('skills', skills);
-  }
-
-  const updateLanguage = (language: string) => {
-    setLanguage(language);
-    sessionStorage.setItem('language', language);
-  }
-
   const handleForward = () => {
     navigate('/chat');
   };
 
   return (
     <div className="flex flex-col h-screen bg-[#1E1E2E] text-white">
-      {hasMessages && (
+      {messages.length > 0 && (
         <Navbar
           backendHost={backendHost}
           showBackIcon
@@ -107,7 +85,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
                 type="text"
                 id="role"
                 value={role}
-                onChange={(e) => updateRole(e.target.value)}
+                onChange={(e) => setRole(e.target.value)}
                 placeholder="e.g. Fullstack Developer"
                 className="w-full p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
@@ -118,7 +96,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
               <textarea
                 id="skills"
                 value={skills}
-                onChange={(e) => updateSkills(e.target.value)}
+                onChange={(e) => setSkills(e.target.value)}
                 placeholder="e.g. Javascript, Typescript, REST API"
                 className="w-full h-32 p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
@@ -129,11 +107,11 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
               <select
                 id="language"
                 value={language}
-                onChange={(e) => updateLanguage(e.target.value)}
+                onChange={(e) => setLanguage(e.target.value)}
                 className="w-full p-3 bg-[#3A3A4E] text-white border border-[#4A4A5E] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3E64FF]"
                 required
               >
-                {languageOptions.map((lang) =>  (
+                {languageOptions.map((lang) => (
                   <option key={lang.code} value={lang.code}>{lang.name}</option>
                 ))}
               </select>
