@@ -103,5 +103,9 @@ func GenerateSSML(ai openai.Client, text string) (string, error) {
 		return "", nil // quietly ignore improper formatted response
 	}
 
+	if err := ValidateIdentical(text, sanitized); err != nil {
+		return "", nil // quietly ignore ssml that differs to the original text
+	}
+
 	return sanitized, nil
 }

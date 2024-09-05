@@ -41,3 +41,8 @@ func SanitizeSSML(input string) (string, error) {
 
 	return input[startIndex : endIndex+8], nil
 }
+
+// TODO - strip all SSML tag and compare whether both are identical
+func ValidateIdentical(original, ssml string) error {
+	return nil
+}
