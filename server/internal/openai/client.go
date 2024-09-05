@@ -18,6 +18,8 @@ type Client interface {
 	TextToSpeech(string) (io.ReadCloser, error)
 	Transcribe(io.ReadCloser, string, string) (TranscriptResponse, error)
 
+	SSML(string) (SSMLResponse, error)
+
 	GetDefaultTranscriptLanguage() string
 	GetLanguage(code string) string
 	GetCode(lang string) string
@@ -272,6 +274,70 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 	}
 
 	return transcriptResp, nil
+}
+
+func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
+	url, err := url.JoinPath(c.BaseURL, "/chat/completions")
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	chatReq := ChatRequest{
+		Model: c.ChatModel,
+		Messages: []ChatMessage{
+			{
+				Role:    ROLE_SYSTEM,
+				Content: `You are Speech Synthesis Markup Language (SSML) generator, for every text passed to you, you convert it to SSML and you should only response with valid SSML and nothing else.`,
+			},
+			{
+				Role:    ROLE_USER,
+				Content: text,
+			},
+		},
+		ResponseFormat: &map[string]any{
+			"type": "json_schema",
+			"json_schema": map[string]any{
+				"name":   "ssml_response",
+				"strict": true,
+				"schema": map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"ssml": map[string]any{
+							"type": "string",
+						},
+					},
+					"required":             []string{"ssml"},
+					"additionalProperties": false,
+				},
+			},
+		},
+	}
+
+	body, err := json.Marshal(chatReq)
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(body))
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	var chatResp SSMLResponse
+	err = unmarshalJSONResponse(resp, &chatResp)
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	return chatResp, nil
 }
 
 func (c *OpenAI) GetDefaultTranscriptLanguage() string {

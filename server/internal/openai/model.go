@@ -1,12 +1,17 @@
 package openai
 
 type ChatRequest struct {
-	Messages []ChatMessage `json:"messages"`
-	Model    string        `json:"model"`
+	Messages       []ChatMessage   `json:"messages"`
+	Model          string          `json:"model"`
+	ResponseFormat *map[string]any `json:"responseFormat"`
 }
 
 type ChatResponse struct {
 	Choices []Choice `json:"choices"`
+}
+
+type SSMLResponse struct {
+	SSML string `json:"ssml"`
 }
 
 type ChatMessage struct {
