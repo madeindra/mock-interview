@@ -128,6 +128,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const synthesizeText = async (text: string, language: string) => {
     const audio = new SpeechSynthesisUtterance(text);
     audio.lang = language;
+    audio.rate = 1.2;
     window.speechSynthesis.speak(audio);
   }
 
