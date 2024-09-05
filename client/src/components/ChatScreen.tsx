@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AnimatedText from './AnimatedText';
 import Navbar from './Navbar';
 import { Message, useInterviewStore } from '../store';
 
@@ -7,31 +8,6 @@ interface ChatScreenProps {
   backendHost: string;
   setError: (error: string | null) => void;
 }
-
-const useTypingEffect = (message: Message, speed: number = 25) => {
-  const [displayedText, setDisplayedText] = useState('');
-
-  useEffect(() => {
-    if (message.isAnimated && !message.hasAnimated) {
-      let i = 0;
-      const timer = setInterval(() => {
-        setDisplayedText(message.text.slice(0, i));
-        i++;
-        if (i > message.text.length) {
-          clearInterval(timer);
-          
-          message.hasAnimated = true;
-        }
-      }, speed);
-
-      return () => clearInterval(timer);
-    } else {
-      setDisplayedText(message.text);
-    }
-  }, [message, speed]);
-
-  return displayedText;
-};
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const { messages, initialText, initialAudio, language, isIntroDone, interviewId, interviewSecret, hasEnded, addMessage, setIsIntroDone, setHasEnded, resetStore } = useInterviewStore();
@@ -262,11 +238,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       </div>
     </div>
   );
-};
-
-const AnimatedText: React.FC<{ message: Message }> = ({ message }) => {
-  const displayedText = useTypingEffect(message);
-  return <>{displayedText}</>;
 };
 
 export default ChatScreen;
