@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -21,4 +22,22 @@ func SanitizeString(text string) string {
 	text = strings.Replace(text, "\n", " ", -1)
 
 	return text
+}
+
+func SanitizeSSML(input string) (string, error) {
+	if !strings.Contains(input, "<speak") || !strings.Contains(input, "</speak>") {
+		return "", fmt.Errorf("input string does not contain both <speak and </speak> tags")
+	}
+
+	startIndex := strings.Index(input, "<speak")
+	if startIndex == -1 {
+		return "", fmt.Errorf("could not find opening <speak tag")
+	}
+
+	endIndex := strings.LastIndex(input, "</speak>")
+	if endIndex == -1 {
+		return "", fmt.Errorf("could not find closing </speak> tag")
+	}
+
+	return input[startIndex : endIndex+8], nil
 }

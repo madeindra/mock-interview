@@ -98,5 +98,10 @@ func GenerateSSML(ai openai.Client, text string) (string, error) {
 		return "", fmt.Errorf("empty ssml response")
 	}
 
-	return generated.SSML, nil
+	sanitized, err := SanitizeSSML(generated.SSML)
+	if err != nil {
+		return "", nil // quietly ignore improper formatted response
+	}
+
+	return sanitized, nil
 }
