@@ -132,6 +132,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       return
     }
 
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel()
+    }
+
     const audio = new SpeechSynthesisUtterance();
     audio.text = ssml || text;
     audio.lang = language;
