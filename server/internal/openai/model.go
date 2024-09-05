@@ -3,7 +3,7 @@ package openai
 type ChatRequest struct {
 	Messages       []ChatMessage   `json:"messages"`
 	Model          string          `json:"model"`
-	ResponseFormat *map[string]any `json:"responseFormat"`
+	ResponseFormat *map[string]any `json:"response_format"`
 }
 
 type ChatResponse struct {

@@ -39,7 +39,7 @@ type OpenAI struct {
 const (
 	baseURL            = "https://api.openai.com/v1"
 	statusURL          = "https://status.openai.com/api/v2"
-	chatModel          = "gpt-4o"
+	chatModel          = "gpt-4o-2024-08-06"
 	transcriptModel    = "whisper-1"
 	transcriptLanguage = "en"
 	ttsModel           = "tts-1"
@@ -331,13 +331,23 @@ func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
 		return SSMLResponse{}, err
 	}
 
-	var chatResp SSMLResponse
+	var chatResp ChatResponse
 	err = unmarshalJSONResponse(resp, &chatResp)
 	if err != nil {
 		return SSMLResponse{}, err
 	}
 
-	return chatResp, nil
+	if len(chatResp.Choices) == 0 {
+		return SSMLResponse{}, fmt.Errorf("no valid response returned")
+	}
+
+	var ssmlResp SSMLResponse
+	err = json.Unmarshal([]byte(chatResp.Choices[0].Message.Content), &ssmlResp)
+	if err != nil {
+		return SSMLResponse{}, err
+	}
+
+	return ssmlResp, nil
 }
 
 func (c *OpenAI) GetDefaultTranscriptLanguage() string {
