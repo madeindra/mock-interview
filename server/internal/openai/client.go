@@ -3,6 +3,7 @@ package openai
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ type OpenAI struct {
 const (
 	baseURL            = "https://api.openai.com/v1"
 	statusURL          = "https://status.openai.com/api/v2"
-	chatModel          = "gpt-4o-2024-08-06"
+	chatModel          = "gpt-4o-mini-2024-07-18"
 	transcriptModel    = "whisper-1"
 	transcriptLanguage = "en"
 	ttsModel           = "tts-1"
@@ -49,6 +50,9 @@ const (
 var supportedTranscriptLanguages = map[Language]struct{}{
 	LANGUAGE_ENGLISH: {},
 }
+
+//go:embed templates/ssml.prompt.txt
+var ssmlPrompt string
 
 func NewOpenAI(apiKey string) *OpenAI {
 	return &OpenAI{
@@ -287,7 +291,7 @@ func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
 		Messages: []ChatMessage{
 			{
 				Role:    ROLE_SYSTEM,
-				Content: `You are Speech Synthesis Markup Language (SSML) generator, for every text passed to you, you convert it to SSML and you should only response with valid SSML and nothing else.`,
+				Content: ssmlPrompt,
 			},
 			{
 				Role:    ROLE_USER,
