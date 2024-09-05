@@ -26,7 +26,11 @@ const useTypingEffect = (message: Message, speed: number = 25) => {
     return displayedText;
 };
 
-const AnimatedText: React.FC<{ message: Message }> = ({ message }) => {
+interface AnimatedTextProps {
+    message: Message
+  }
+
+const AnimatedText: React.FC<AnimatedTextProps> = ({ message }) => {
     const displayedText = useTypingEffect(message);
     return <>{displayedText}</>;
 };
