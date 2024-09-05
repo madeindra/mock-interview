@@ -10,7 +10,7 @@ interface ChatScreenProps {
 }
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
-  const { messages, initialText, initialAudio, language, isIntroDone, interviewId, interviewSecret, hasEnded, addMessage, setIsIntroDone, setHasEnded, resetStore } = useInterviewStore();
+  const { messages, initialText, initialSSML, initialAudio, language, isIntroDone, interviewId, interviewSecret, hasEnded, addMessage, setIsIntroDone, setHasEnded, resetStore } = useInterviewStore();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -31,11 +31,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       if (initialAudio && initialAudio !== 'undefined') {
         playAudio(initialAudio);
       } else {
-        synthesizeText(initialText, language);
+        synthesizeText(initialText, initialSSML, language);
       }
       setIsIntroDone(true);
     }
-  }, [isIntroDone, initialText, initialAudio, language, setIsIntroDone])
+  }, [isIntroDone, initialText, initialSSML, initialAudio, language, setIsIntroDone])
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -102,7 +102,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
         if (data?.data?.answer?.audio) {
           playAudio(data.data.answer.audio);
         } else {
-          synthesizeText(data?.data?.answer?.text, data?.data?.language);
+          synthesizeText(data?.data?.answer?.text, data?.data?.answer?.ssml, data?.data?.language);
         }
 
         setHasStarted(true);
@@ -119,14 +119,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   };
 
   const playAudio = (base64Audio: string | null) => {
-    if (base64Audio) {
-      const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
-      audio.play();
+    if (!base64Audio) {
+      return
     }
+
+    const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+    audio.play();
   };
 
-  const synthesizeText = async (text: string, language: string) => {
-    const audio = new SpeechSynthesisUtterance(text);
+  const synthesizeText = async (text: string, ssml: string, language: string) => {
+    if (!text && !ssml) {
+      return
+    }
+
+    const audio = new SpeechSynthesisUtterance();
+    audio.text = ssml || text;
     audio.lang = language;
     audio.rate = 1.2;
     window.speechSynthesis.speak(audio);
@@ -154,7 +161,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
         if (data?.data?.answer?.audio) {
           playAudio(data.data.answer.audio);
         } else {
-          synthesizeText(data?.data?.answer?.text, data?.data?.language);
+          synthesizeText(data?.data?.answer?.text, data?.data?.answer?.ssml, data?.data?.language);
         }
         setHasEnded(true);
       } else {
@@ -195,7 +202,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
               ? 'bg-[#3E64FF] text-white'
               : 'bg-[#2B2B3B] text-white'
               }`}>
-              {message.isAnimated 
+              {message.isAnimated
                 ? <AnimatedText message={message} />
                 : message.text
               }

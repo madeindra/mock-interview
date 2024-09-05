@@ -10,6 +10,7 @@ const initialState = {
   interviewSecret: "",
   initialAudio: "",
   initialText: "",
+  initialSSML: "",
   messages: [],
   isIntroDone: false,
   hasEnded: false,
@@ -30,6 +31,7 @@ interface InterviewState {
   interviewSecret: string;
   initialAudio: string;
   initialText: string;
+  initialSSML: string;
   messages: Array<Message>;
   isIntroDone: boolean;
   hasEnded: boolean;
@@ -41,6 +43,7 @@ interface InterviewState {
   setInterviewSecret: (secret: string) => void;
   setInitialAudio: (audio: string) => void;
   setInitialText: (text: string) => void;
+  setInitialSSML: (text: string) => void;
   setMessages: (messages: Array<Message>) => void;
   addMessage: (message: Message) => void;
   setIsIntroDone: (isIntroDone: boolean) => void;
@@ -59,8 +62,10 @@ export const useInterviewStore = create<InterviewState>((set) => ({
   setInterviewSecret: (secret) => set({ interviewSecret: secret }),
   setInitialAudio: (audio) => set({ initialAudio: audio }),
   setInitialText: (text) => set({ initialText: text }),
+  setInitialSSML: (text) => set({ initialSSML: text }),
   setMessages: (messages) => set({ messages }),
-  addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
+  addMessage: (message) =>
+    set((state) => ({ messages: [...state.messages, message] })),
   setIsIntroDone: (isIntroDone) => set({ isIntroDone }),
   setHasEnded: (hasEnded) => set({ hasEnded }),
 

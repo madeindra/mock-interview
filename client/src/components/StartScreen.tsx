@@ -14,7 +14,7 @@ const languageOptions = [
 ];
 
 const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
-  const { role, skills, language, messages, setIsIntroDone, setMessages, setRole, setSkills, setLanguage, setInterviewId, setInterviewSecret, setInitialAudio, setInitialText } = useInterviewStore();
+  const { role, skills, language, messages, setIsIntroDone, setMessages, setRole, setSkills, setLanguage, setInterviewId, setInterviewSecret, setInitialAudio, setInitialText, setInitialSSML } = useInterviewStore();
 
   const navigate = useNavigate();
 
@@ -42,6 +42,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ backendHost, setError }) => {
         setInterviewSecret(data.data?.secret);
         setInitialAudio(data.data?.audio);
         setInitialText(data.data?.text);
+        setInitialSSML(data.data?.ssml);
         setLanguage(data.data?.language);
 
         setMessages([{ text: data.data?.text, isUser: false, isAnimated: true }]);
