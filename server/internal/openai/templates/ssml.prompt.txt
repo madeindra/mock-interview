@@ -4,7 +4,8 @@ Instructions:
 
 1. Generate SSML-tagged text from provided text.
 2. Apply appropriate SSML tags to enhance the speech output.
-3. Don't reply with anything other than the SSML-tagged text.
+3. Don't do any modification to the input. No enhancement, no grammar fix, no addition, no removal.
+4. Don't reply with anything other than the SSML-tagged text.
 
 Common SSML Tags and Their Uses:
 

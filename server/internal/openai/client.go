@@ -15,11 +15,11 @@ import (
 type Client interface {
 	IsKeyValid() (bool, error)
 	Status() (Status, error)
-	Chat([]ChatMessage) (ChatResponse, error)
+	Chat([]ChatMessage) (string, error)
 	TextToSpeech(string) (io.ReadCloser, error)
 	Transcribe(io.ReadCloser, string, string) (TranscriptResponse, error)
 
-	SSML(string) (SSMLResponse, error)
+	SSML(string) (string, error)
 
 	GetDefaultTranscriptLanguage() string
 	GetLanguage(code string) string
@@ -135,10 +135,10 @@ func (c *OpenAI) Status() (Status, error) {
 	return STATUS_UNKNOWN, nil
 }
 
-func (c *OpenAI) Chat(messages []ChatMessage) (ChatResponse, error) {
+func (c *OpenAI) Chat(messages []ChatMessage) (string, error) {
 	url, err := url.JoinPath(c.BaseURL, "/chat/completions")
 	if err != nil {
-		return ChatResponse{}, err
+		return "", err
 	}
 
 	chatReq := ChatRequest{
@@ -148,12 +148,12 @@ func (c *OpenAI) Chat(messages []ChatMessage) (ChatResponse, error) {
 
 	body, err := json.Marshal(chatReq)
 	if err != nil {
-		return ChatResponse{}, err
+		return "", err
 	}
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		return ChatResponse{}, err
+		return "", err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
@@ -161,16 +161,20 @@ func (c *OpenAI) Chat(messages []ChatMessage) (ChatResponse, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ChatResponse{}, err
+		return "", err
 	}
 
 	var chatResp ChatResponse
 	err = unmarshalJSONResponse(resp, &chatResp)
 	if err != nil {
-		return ChatResponse{}, err
+		return "", err
 	}
 
-	return chatResp, nil
+	if len(chatResp.Choices) == 0 {
+		return "", fmt.Errorf("no valid response returned")
+	}
+
+	return chatResp.Choices[0].Message.Content, nil
 }
 
 func (c *OpenAI) TextToSpeech(input string) (io.ReadCloser, error) {
@@ -280,10 +284,10 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 	return transcriptResp, nil
 }
 
-func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
+func (c *OpenAI) SSML(text string) (string, error) {
 	url, err := url.JoinPath(c.BaseURL, "/chat/completions")
 	if err != nil {
-		return SSMLResponse{}, err
+		return "", err
 	}
 
 	chatReq := ChatRequest{
@@ -298,33 +302,16 @@ func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
 				Content: text,
 			},
 		},
-		ResponseFormat: &map[string]any{
-			"type": "json_schema",
-			"json_schema": map[string]any{
-				"name":   "ssml_response",
-				"strict": true,
-				"schema": map[string]any{
-					"type": "object",
-					"properties": map[string]any{
-						"ssml": map[string]any{
-							"type": "string",
-						},
-					},
-					"required":             []string{"ssml"},
-					"additionalProperties": false,
-				},
-			},
-		},
 	}
 
 	body, err := json.Marshal(chatReq)
 	if err != nil {
-		return SSMLResponse{}, err
+		return "", err
 	}
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		return SSMLResponse{}, err
+		return "", err
 	}
 
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
@@ -332,26 +319,20 @@ func (c *OpenAI) SSML(text string) (SSMLResponse, error) {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return SSMLResponse{}, err
+		return "", err
 	}
 
 	var chatResp ChatResponse
 	err = unmarshalJSONResponse(resp, &chatResp)
 	if err != nil {
-		return SSMLResponse{}, err
+		return "", err
 	}
 
 	if len(chatResp.Choices) == 0 {
-		return SSMLResponse{}, fmt.Errorf("no valid response returned")
+		return "", fmt.Errorf("no valid response returned")
 	}
 
-	var ssmlResp SSMLResponse
-	err = json.Unmarshal([]byte(chatResp.Choices[0].Message.Content), &ssmlResp)
-	if err != nil {
-		return SSMLResponse{}, err
-	}
-
-	return ssmlResp, nil
+	return chatResp.Choices[0].Message.Content, nil
 }
 
 func (c *OpenAI) GetDefaultTranscriptLanguage() string {

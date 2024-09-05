@@ -53,11 +53,11 @@ func GenerateText(ai openai.Client, entries []openai.ChatMessage) (string, error
 		return "", err
 	}
 
-	if len(chatCompletion.Choices) == 0 {
+	if chatCompletion == "" {
 		return "", fmt.Errorf("empty chat response")
 	}
 
-	return chatCompletion.Choices[0].Message.Content, nil
+	return chatCompletion, nil
 }
 
 func GenerateSpeech(ai openai.Client, language, text string) (string, error) {
@@ -89,16 +89,16 @@ func GenerateSSML(ai openai.Client, text string) (string, error) {
 		return "", fmt.Errorf("unsupported client")
 	}
 
-	generated, err := ai.SSML(text)
+	ssml, err := ai.SSML(text)
 	if err != nil {
 		return "", err
 	}
 
-	if generated.SSML == "" {
+	if ssml == "" {
 		return "", fmt.Errorf("empty ssml response")
 	}
 
-	sanitized, err := SanitizeSSML(generated.SSML)
+	sanitized, err := SanitizeSSML(ssml)
 	if err != nil {
 		return "", nil // quietly ignore improper formatted response
 	}
