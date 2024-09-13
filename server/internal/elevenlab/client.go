@@ -64,7 +64,7 @@ func (c *ElevenLab) TextToSpeech(input string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("xi-api-key", fmt.Sprintf("Bearer %s", c.APIKey))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
