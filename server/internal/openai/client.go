@@ -22,8 +22,6 @@ type Client interface {
 	SSML(string) (string, error)
 
 	GetDefaultTranscriptLanguage() string
-	GetLanguage(code string) string
-	GetCode(lang string) string
 	IsSpeechAvailable(string) bool
 }
 
@@ -47,8 +45,8 @@ const (
 	ttsVoice           = "nova"
 )
 
-var supportedTranscriptLanguages = map[Language]struct{}{
-	LANGUAGE_ENGLISH: {},
+var supportedTranscriptLanguages = map[string]struct{}{
+	"en": {},
 }
 
 //go:embed templates/ssml.prompt.txt
@@ -336,19 +334,11 @@ func (c *OpenAI) SSML(text string) (string, error) {
 }
 
 func (c *OpenAI) GetDefaultTranscriptLanguage() string {
-	return string(Language(c.transcriptLanguage))
-}
-
-func (c *OpenAI) GetLanguage(code string) string {
-	return string(CodeToLanguage[code])
-}
-
-func (c *OpenAI) GetCode(lang string) string {
-	return LanguageToCode[Language(lang)]
+	return string(c.transcriptLanguage)
 }
 
 func (c *OpenAI) IsSpeechAvailable(lang string) bool {
-	_, ok := supportedTranscriptLanguages[Language(lang)]
+	_, ok := supportedTranscriptLanguages[lang]
 	return ok
 }
 

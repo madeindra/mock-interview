@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/madeindra/mock-interview/server/internal/config"
 	"github.com/madeindra/mock-interview/server/internal/data"
 	"github.com/madeindra/mock-interview/server/internal/middleware"
 	"github.com/madeindra/mock-interview/server/internal/model"
@@ -63,7 +64,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 
 	chatLanguage := h.ai.GetDefaultTranscriptLanguage()
 	if startChatRequest.Language != "" {
-		chatLanguage = h.ai.GetLanguage(startChatRequest.Language)
+		chatLanguage = config.GetLanguage(startChatRequest.Language)
 	}
 
 	systempPrompt, initialText, err := util.GetChatAssets(h.ai, startChatRequest.Role, startChatRequest.Skills, chatLanguage)
@@ -272,7 +273,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
-		Language: h.ai.GetCode(user.Language),
+		Language: config.GetCode(user.Language),
 		Prompt: model.Chat{
 			Text: transcriptText,
 		},
@@ -373,7 +374,7 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 	}
 
 	response := model.AnswerChatResponse{
-		Language: h.ai.GetCode(user.Language),
+		Language: config.GetCode(user.Language),
 		Answer: model.Chat{
 			Text:  answerText,
 			Audio: answerAudio,
