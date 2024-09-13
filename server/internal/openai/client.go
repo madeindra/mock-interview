@@ -28,13 +28,13 @@ type Client interface {
 }
 
 type OpenAI struct {
-	APIKey             string
-	BaseURL            string
-	ChatModel          string
-	TranscriptModel    string
-	TranscriptLanguage string
-	TTSModel           string
-	TTSVoice           string
+	apiKey             string
+	baseURL            string
+	chatModel          string
+	transcriptModel    string
+	transcriptLanguage string
+	ttsModel           string
+	ttsVoice           string
 }
 
 const (
@@ -56,18 +56,18 @@ var ssmlPrompt string
 
 func NewOpenAI(apiKey string) *OpenAI {
 	return &OpenAI{
-		APIKey:             apiKey,
-		BaseURL:            baseURL,
-		ChatModel:          chatModel,
-		TranscriptModel:    transcriptModel,
-		TTSModel:           ttsModel,
-		TTSVoice:           ttsVoice,
-		TranscriptLanguage: transcriptLanguage,
+		apiKey:             apiKey,
+		baseURL:            baseURL,
+		chatModel:          chatModel,
+		transcriptModel:    transcriptModel,
+		ttsModel:           ttsModel,
+		ttsVoice:           ttsVoice,
+		transcriptLanguage: transcriptLanguage,
 	}
 }
 
 func (c *OpenAI) IsKeyValid() (bool, error) {
-	url, err := url.JoinPath(c.BaseURL, "/models")
+	url, err := url.JoinPath(c.baseURL, "/models")
 	if err != nil {
 		return false, err
 	}
@@ -77,7 +77,7 @@ func (c *OpenAI) IsKeyValid() (bool, error) {
 		return false, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -136,13 +136,13 @@ func (c *OpenAI) Status() (Status, error) {
 }
 
 func (c *OpenAI) Chat(messages []ChatMessage) (string, error) {
-	url, err := url.JoinPath(c.BaseURL, "/chat/completions")
+	url, err := url.JoinPath(c.baseURL, "/chat/completions")
 	if err != nil {
 		return "", err
 	}
 
 	chatReq := ChatRequest{
-		Model:    c.ChatModel,
+		Model:    c.chatModel,
 		Messages: messages,
 	}
 
@@ -156,7 +156,7 @@ func (c *OpenAI) Chat(messages []ChatMessage) (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -178,14 +178,14 @@ func (c *OpenAI) Chat(messages []ChatMessage) (string, error) {
 }
 
 func (c *OpenAI) TextToSpeech(input string) (io.ReadCloser, error) {
-	url, err := url.JoinPath(c.BaseURL, "/audio/speech")
+	url, err := url.JoinPath(c.baseURL, "/audio/speech")
 	if err != nil {
 		return nil, err
 	}
 
 	ttsReq := TTSRequest{
-		Model: c.TTSModel,
-		Voice: c.TTSVoice,
+		Model: c.ttsModel,
+		Voice: c.ttsVoice,
 		Input: input,
 	}
 
@@ -199,7 +199,7 @@ func (c *OpenAI) TextToSpeech(input string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -220,7 +220,7 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 	}
 	defer file.Close()
 
-	url, err := url.JoinPath(c.BaseURL, "/audio/transcriptions")
+	url, err := url.JoinPath(c.baseURL, "/audio/transcriptions")
 	if err != nil {
 		return TranscriptResponse{}, err
 	}
@@ -238,12 +238,12 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 		return TranscriptResponse{}, err
 	}
 
-	err = writer.WriteField("model", c.TranscriptModel)
+	err = writer.WriteField("model", c.transcriptModel)
 	if err != nil {
 		return TranscriptResponse{}, err
 	}
 
-	transcriptLanguage := c.TranscriptLanguage
+	transcriptLanguage := c.transcriptLanguage
 	if language != "" {
 		transcriptLanguage = language
 	}
@@ -263,7 +263,7 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 		return TranscriptResponse{}, err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
 	resp, err := http.DefaultClient.Do(req)
@@ -285,13 +285,13 @@ func (c *OpenAI) Transcribe(file io.ReadCloser, filename, language string) (Tran
 }
 
 func (c *OpenAI) SSML(text string) (string, error) {
-	url, err := url.JoinPath(c.BaseURL, "/chat/completions")
+	url, err := url.JoinPath(c.baseURL, "/chat/completions")
 	if err != nil {
 		return "", err
 	}
 
 	chatReq := ChatRequest{
-		Model: c.ChatModel,
+		Model: c.chatModel,
 		Messages: []ChatMessage{
 			{
 				Role:    ROLE_SYSTEM,
@@ -314,7 +314,7 @@ func (c *OpenAI) SSML(text string) (string, error) {
 		return "", err
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -336,7 +336,7 @@ func (c *OpenAI) SSML(text string) (string, error) {
 }
 
 func (c *OpenAI) GetDefaultTranscriptLanguage() string {
-	return string(Language(c.TranscriptLanguage))
+	return string(Language(c.transcriptLanguage))
 }
 
 func (c *OpenAI) GetLanguage(code string) string {

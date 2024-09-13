@@ -16,10 +16,10 @@ type Client interface {
 }
 
 type ElevenLab struct {
-	APIKey   string
-	BaseURL  string
-	TTSModel string
-	TTSVoice string
+	apiKey   string
+	baseURL  string
+	ttsModel string
+	ttsVoice string
 }
 
 const (
@@ -35,22 +35,22 @@ var defaultVoiceSetting = VoiceSetting{
 
 func NewElevenLab(apiKey string) *ElevenLab {
 	return &ElevenLab{
-		APIKey:   apiKey,
-		BaseURL:  baseURL,
-		TTSModel: ttsModel,
-		TTSVoice: ttsVoice,
+		apiKey:   apiKey,
+		baseURL:  baseURL,
+		ttsModel: ttsModel,
+		ttsVoice: ttsVoice,
 	}
 }
 
 func (c *ElevenLab) TextToSpeech(input string) (io.ReadCloser, error) {
-	url, err := url.JoinPath(c.BaseURL, "text-to-speech", c.TTSVoice)
+	url, err := url.JoinPath(c.baseURL, "text-to-speech", c.ttsVoice)
 	if err != nil {
 		return nil, err
 	}
 
 	ttsReq := TTSRequest{
 		Text:         input,
-		ModelID:      c.TTSModel,
+		ModelID:      c.ttsModel,
 		VoiceSetting: defaultVoiceSetting,
 	}
 
@@ -64,7 +64,7 @@ func (c *ElevenLab) TextToSpeech(input string) (io.ReadCloser, error) {
 		return nil, err
 	}
 
-	req.Header.Set("xi-api-key", fmt.Sprintf("Bearer %s", c.APIKey))
+	req.Header.Set("xi-api-key", c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
