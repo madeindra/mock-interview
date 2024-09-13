@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/madeindra/mock-interview/server/internal/elevenlab"
 	"github.com/madeindra/mock-interview/server/internal/openai"
 )
 
@@ -60,20 +61,30 @@ func GenerateText(ai openai.Client, entries []openai.ChatMessage) (string, error
 	return chatCompletion, nil
 }
 
-func GenerateSpeech(ai openai.Client, language, text string) (string, error) {
+func GenerateSpeech(ai openai.Client, el elevenlab.Client, language, text string) (string, error) {
 	if ai == nil {
 		return "", fmt.Errorf("unsupported client")
 	}
 
-	if !ai.IsSpeechAvailable(language) {
-		return "", nil // quietly ignore unsupported languages
-	}
-
 	speechInput := SanitizeString(text)
 
-	speech, err := ai.TextToSpeech(speechInput)
-	if err != nil {
-		return "", err
+	var speech io.ReadCloser
+	if ai.IsSpeechAvailable(language) {
+		tts, err := ai.TextToSpeech(speechInput)
+		if err != nil {
+			return "", err
+		}
+
+		speech = tts
+	} else if el != nil {
+		tts, err := el.TextToSpeech(speechInput)
+		if err != nil {
+			return "", err
+		}
+
+		speech = tts
+	} else {
+		return "", nil // quietly ignore unsupported language when alternative api not available
 	}
 
 	speechByte, err := io.ReadAll(speech)

@@ -6,9 +6,10 @@ import (
 )
 
 type AppConfig struct {
-	Port   string
-	APIKey string
-	DBPath string
+	Port      string
+	APIKey    string
+	TTSAPIKey string
+	DBPath    string
 
 	CORSOrigins []string
 	CORSMethods []string

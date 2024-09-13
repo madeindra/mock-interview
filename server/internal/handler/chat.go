@@ -74,7 +74,7 @@ func (h *handler) StartChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	initialAudio, err := util.GenerateSpeech(h.ai, chatLanguage, initialText)
+	initialAudio, err := util.GenerateSpeech(h.ai, h.el, chatLanguage, initialText)
 	if err != nil {
 		log.Printf("failed to generate speech: %v", err)
 		util.SendResponse(w, nil, "failed to generate speech", http.StatusInternalServerError)
@@ -224,7 +224,7 @@ func (h *handler) AnswerChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	answerAudio, err := util.GenerateSpeech(h.ai, user.Language, answerText)
+	answerAudio, err := util.GenerateSpeech(h.ai, h.el, user.Language, answerText)
 	if err != nil {
 		log.Printf("failed to generate speech: %v", err)
 		util.SendResponse(w, nil, "failed to generate speech", http.StatusInternalServerError)
@@ -335,7 +335,7 @@ func (h *handler) EndChat(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	answerAudio, err := util.GenerateSpeech(h.ai, user.Language, answerText)
+	answerAudio, err := util.GenerateSpeech(h.ai, h.el, user.Language, answerText)
 	if err != nil {
 		log.Printf("failed to generate speech: %v", err)
 		util.SendResponse(w, nil, "failed to generate speech", http.StatusInternalServerError)
