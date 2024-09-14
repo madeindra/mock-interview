@@ -11,12 +11,14 @@ interface ChatScreenProps {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   const { messages, initialText, initialSSML, initialAudio, language, isIntroDone, interviewId, interviewSecret, hasEnded, addMessage, setIsIntroDone, setHasEnded, resetStore } = useInterviewStore();
+  
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   const navigate = useNavigate();
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -123,8 +125,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
       return
     }
 
-    const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`);
-    audio.play();
+    stopAudio();
+
+    audioRef.current = new Audio(`data:audio/mp3;base64,${base64Audio}`);
+    audioRef.current.play();
+  };
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
 
   const synthesizeText = async (text: string, ssml: string, language: string) => {
@@ -180,11 +191,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ backendHost, setError }) => {
   };
 
   const handleStartOver = () => {
+    stopAudio();
+
     resetStore();
     navigate('/');
   };
 
   const handleBack = () => {
+    stopAudio();
+    
     navigate('/');
   };
 
